@@ -61,6 +61,9 @@ declarationVisitor node context =
         Declaration.FunctionDeclaration { signature } ->
             context |> maybeSignatureVisitor signature
 
+        Declaration.AliasDeclaration { typeAnnotation } ->
+            context |> typeAnnotationVisitor typeAnnotation
+
         _ ->
             context
 
