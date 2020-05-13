@@ -5,4 +5,25 @@
 ![elm 0.19](https://img.shields.io/badge/elm-0.19-%231293D8)
 ![Tests](https://github.com/sparksp/elm-review-always/workflows/Tests/badge.svg)
 
-Coming Soon! An [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-review/latest/) rule to enforce consistent import aliases.
+An [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-review/latest/) rule to enforce consistent import aliases.
+
+## Provided Rule
+
+- [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-ports/latest/NoUnusedPorts) - enforce consistent aliases.
+
+## Example Configuration
+
+```elm
+import NoInconsistentAliases
+import Review.Rule exposing (Rule)
+
+config : List Rule
+config =
+    [ NoInconsistentAliases.config
+        [ ( [ "Html", "Attributes" ], "Attr" )
+        , ( [ "Json", "Decode" ], "Decode" )
+        , ( [ "Json", "Encode" ], "Encode" )
+        ]
+        |> NoInconsistentAliases.rule
+    ]
+```
