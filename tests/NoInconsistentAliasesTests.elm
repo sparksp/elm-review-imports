@@ -93,6 +93,33 @@ main =
     Page.program
 """
                         ]
+        , test "reports incorrect aliases in a custom type constructor" <|
+            \_ ->
+                """
+module Main exposing (main)
+import Json.Encode as E
+import Page
+type JsonValue = JsonValue E.Value
+main = Page.main
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( [ "Json", "Encode" ], "Encode" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ incorrectAliasError "Encode" "Json.Encode" "E"
+                            |> Review.Test.atExactly { start = { row = 3, column = 23 }, end = { row = 3, column = 24 } }
+                            |> Review.Test.whenFixed
+                                """
+module Main exposing (main)
+import Json.Encode as Encode
+import Page
+type JsonValue = JsonValue Encode.Value
+main = Page.main
+"""
+                        ]
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """

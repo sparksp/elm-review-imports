@@ -6,6 +6,7 @@ import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Signature exposing (Signature)
+import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config as Config exposing (Config)
@@ -64,6 +65,9 @@ declarationVisitor node context =
         Declaration.AliasDeclaration { typeAnnotation } ->
             context |> typeAnnotationVisitor typeAnnotation
 
+        Declaration.CustomTypeDeclaration { constructors } ->
+            context |> valueConstructorListVisitor constructors
+
         _ ->
             context
 
@@ -81,6 +85,16 @@ maybeSignatureVisitor maybeNode context =
 signatureVisitor : Node Signature -> Context.Module -> Context.Module
 signatureVisitor node context =
     typeAnnotationVisitor (node |> Node.value |> .typeAnnotation) context
+
+
+valueConstructorListVisitor : List (Node Type.ValueConstructor) -> Context.Module -> Context.Module
+valueConstructorListVisitor list context =
+    List.foldl valueConstructorVisitor context list
+
+
+valueConstructorVisitor : Node Type.ValueConstructor -> Context.Module -> Context.Module
+valueConstructorVisitor node context =
+    context |> typeAnnotationListVisitor (node |> Node.value |> .arguments)
 
 
 typeAnnotationListVisitor : List (Node TypeAnnotation) -> Context.Module -> Context.Module
