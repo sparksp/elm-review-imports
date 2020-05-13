@@ -9,7 +9,7 @@ module NoInconsistentAliases exposing (rule, config)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import NoInconsistentAliases.Config as Config exposing (Config)
 import NoInconsistentAliases.Visitor as Visitor
-import Review.Rule as Rule exposing (Rule)
+import Review.Rule exposing (Rule)
 
 
 {-| Ensure consistent use of import aliases throughout your project.

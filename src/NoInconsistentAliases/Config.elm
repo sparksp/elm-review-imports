@@ -5,14 +5,14 @@ import Elm.Syntax.ModuleName exposing (ModuleName)
 
 
 type Config
-    = Config { aliases : Dict ModuleName String }
+    = Aliases (Dict ModuleName String)
 
 
 config : List ( ModuleName, String ) -> Config
 config aliases =
-    Config { aliases = Dict.fromList aliases }
+    Aliases (Dict.fromList aliases)
 
 
 lookupAlias : ModuleName -> Config -> Maybe String
-lookupAlias moduleName (Config { aliases }) =
+lookupAlias moduleName (Aliases aliases) =
     Dict.get moduleName aliases

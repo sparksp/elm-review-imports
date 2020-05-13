@@ -1,6 +1,6 @@
 module NoInconsistentAliases.Visitor exposing (rule)
 
-import Elm.Syntax.Import as Import exposing (Import)
+import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import NoInconsistentAliases.Config as Config exposing (Config)
