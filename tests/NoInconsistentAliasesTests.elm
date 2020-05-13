@@ -196,6 +196,47 @@ import Elm.Syntax.Node as Node
 getRange ((Node.Node range _) as node) = range
 """
                         ]
+        , test "reports incorrect aliases in let blocks" <|
+            \_ ->
+                """
+module Visitor exposing (shiftRange)
+import Elm.Syntax.Node as ESN
+shiftRange : ( ESN.Node String, Int ) -> { node : ESN.Node String } -> { a | node : ESN.Node String } -> Range
+shiftRange input _ _ =
+    let
+        asList : ( ESN.Node, Int ) -> List ESN.Node
+        asList ( node, _ ) = [ node ]
+        ( ESN.Node range1 value1, length1 ) = input
+        [ ESN.Node range2 value2 ] = asList input
+        ESN.Node range3 value3 :: [] = asList input
+    in
+    range
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ incorrectAliasError "Node" "Elm.Syntax.Node" "ESN"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 30 } }
+                            |> Review.Test.whenFixed
+                                """
+module Visitor exposing (shiftRange)
+import Elm.Syntax.Node as Node
+shiftRange : ( Node.Node String, Int ) -> { node : Node.Node String } -> { a | node : Node.Node String } -> Range
+shiftRange input _ _ =
+    let
+        asList : ( Node.Node, Int ) -> List Node.Node
+        asList ( node, _ ) = [ node ]
+        ( Node.Node range1 value1, length1 ) = input
+        [ Node.Node range2 value2 ] = asList input
+        Node.Node range3 value3 :: [] = asList input
+    in
+    range
+"""
+                        ]
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """

@@ -118,6 +118,18 @@ typeAnnotationVisitor node context =
                 |> moduleCallVisitor moduleCall
                 |> typeAnnotationListVisitor types
 
+        TypeAnnotation.Tupled list ->
+            context
+                |> typeAnnotationListVisitor list
+
+        TypeAnnotation.Record list ->
+            context
+                |> recordFieldListVisitor list
+
+        TypeAnnotation.GenericRecord _ list ->
+            context
+                |> recordFieldListVisitor (Node.value list)
+
         TypeAnnotation.FunctionTypeAnnotation argument return ->
             context
                 |> typeAnnotationVisitor argument
@@ -125,6 +137,17 @@ typeAnnotationVisitor node context =
 
         _ ->
             context
+
+
+recordFieldListVisitor : List (Node TypeAnnotation.RecordField) -> Context.Module -> Context.Module
+recordFieldListVisitor list context =
+    List.foldl recordFieldVisitor context list
+
+
+recordFieldVisitor : Node TypeAnnotation.RecordField -> Context.Module -> Context.Module
+recordFieldVisitor node context =
+    context
+        |> typeAnnotationVisitor (node |> Node.value |> Tuple.second)
 
 
 moduleCallVisitor : Node ( ModuleName, String ) -> Context.Module -> Context.Module
@@ -146,6 +169,9 @@ expressionVisitor node direction context =
         ( Rule.OnEnter, Expression.CaseExpression { cases } ) ->
             ( [], context |> caseListVisitor cases )
 
+        ( Rule.OnEnter, Expression.LetExpression { declarations } ) ->
+            ( [], context |> letDeclarationListVisitor declarations )
+
         ( Rule.OnEnter, _ ) ->
             ( [], context )
 
@@ -161,6 +187,23 @@ caseListVisitor list context =
 caseVisitor : Expression.Case -> Context.Module -> Context.Module
 caseVisitor ( pattern, _ ) context =
     context |> patternVisitor pattern
+
+
+letDeclarationListVisitor : List (Node Expression.LetDeclaration) -> Context.Module -> Context.Module
+letDeclarationListVisitor list context =
+    List.foldl letDeclarationVisitor context list
+
+
+letDeclarationVisitor : Node Expression.LetDeclaration -> Context.Module -> Context.Module
+letDeclarationVisitor node context =
+    case Node.value node of
+        Expression.LetFunction { signature, declaration } ->
+            context
+                |> maybeSignatureVisitor signature
+                |> functionImplementationVisitor declaration
+
+        Expression.LetDestructuring pattern _ ->
+            context |> patternVisitor pattern
 
 
 patternListVisitor : List (Node Pattern) -> Context.Module -> Context.Module
@@ -194,6 +237,17 @@ patternVisitor node context =
 
         Pattern.ParenthesizedPattern pattern ->
             context |> patternVisitor pattern
+
+        Pattern.ListPattern patterns ->
+            context |> patternListVisitor patterns
+
+        Pattern.TuplePattern patterns ->
+            context |> patternListVisitor patterns
+
+        Pattern.UnConsPattern head rest ->
+            context
+                |> patternVisitor head
+                |> patternVisitor rest
 
         _ ->
             context
