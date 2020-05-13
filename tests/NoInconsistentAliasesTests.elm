@@ -173,6 +173,29 @@ expressionVisitor node =
             []
 """
                         ]
+        , test "reports incorrect aliases in function arguments" <|
+            \_ ->
+                """
+module Visitor exposing (getRange)
+import Elm.Syntax.Node as ESN
+getRange ((ESN.Node range _) as node) = range
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ incorrectAliasError "Node" "Elm.Syntax.Node" "ESN"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 30 } }
+                            |> Review.Test.whenFixed
+                                """
+module Visitor exposing (getRange)
+import Elm.Syntax.Node as Node
+getRange ((Node.Node range _) as node) = range
+"""
+                        ]
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """

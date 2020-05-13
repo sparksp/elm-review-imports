@@ -60,8 +60,10 @@ declarationListVisitor nodes context =
 declarationVisitor : Node Declaration -> Context.Module -> Context.Module
 declarationVisitor node context =
     case Node.value node of
-        Declaration.FunctionDeclaration { signature } ->
-            context |> maybeSignatureVisitor signature
+        Declaration.FunctionDeclaration { signature, declaration } ->
+            context
+                |> maybeSignatureVisitor signature
+                |> functionImplementationVisitor declaration
 
         Declaration.AliasDeclaration { typeAnnotation } ->
             context |> typeAnnotationVisitor typeAnnotation
@@ -71,6 +73,11 @@ declarationVisitor node context =
 
         _ ->
             context
+
+
+functionImplementationVisitor : Node Expression.FunctionImplementation -> Context.Module -> Context.Module
+functionImplementationVisitor node context =
+    context |> patternListVisitor (node |> Node.value |> .arguments)
 
 
 maybeSignatureVisitor : Maybe (Node Signature) -> Context.Module -> Context.Module
@@ -156,6 +163,11 @@ caseVisitor ( pattern, _ ) context =
     context |> patternVisitor pattern
 
 
+patternListVisitor : List (Node Pattern) -> Context.Module -> Context.Module
+patternListVisitor list context =
+    List.foldl patternVisitor context list
+
+
 patternVisitor : Node Pattern -> Context.Module -> Context.Module
 patternVisitor node context =
     case Node.value node of
@@ -176,6 +188,12 @@ patternVisitor node context =
 
                 _ ->
                     context
+
+        Pattern.AsPattern pattern _ ->
+            context |> patternVisitor pattern
+
+        Pattern.ParenthesizedPattern pattern ->
+            context |> patternVisitor pattern
 
         _ ->
             context
