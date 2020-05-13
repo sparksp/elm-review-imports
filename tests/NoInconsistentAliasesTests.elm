@@ -33,6 +33,35 @@ import Html.Attributes as Attr
 main = Html.div [ Attr.class "container" ] []
 """
                         ]
+        , test "reports incorrect aliases in a function signature" <|
+            \_ ->
+                """
+module Main exposing (main)
+import Json.Encode as E
+import Page
+main : Program E.Value Page.Model Page.Msg
+main =
+    Page.program
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( [ "Json", "Encode" ], "Encode" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ incorrectAliasError "Encode" "Json.Encode" "E"
+                            |> Review.Test.atExactly { start = { row = 3, column = 23 }, end = { row = 3, column = 24 } }
+                            |> Review.Test.whenFixed
+                                """
+module Main exposing (main)
+import Json.Encode as Encode
+import Page
+main : Program Encode.Value Page.Model Page.Msg
+main =
+    Page.program
+"""
+                        ]
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """

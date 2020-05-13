@@ -1,9 +1,12 @@
 module NoInconsistentAliases.Visitor exposing (rule)
 
+import Elm.Syntax.Declaration as Declaration exposing (Declaration)
 import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
+import Elm.Syntax.Signature exposing (Signature)
+import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config as Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -16,6 +19,7 @@ rule : Config -> Rule
 rule config =
     Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
         |> Rule.withImportVisitor (importVisitor config)
+        |> Rule.withDeclarationListVisitor declarationListVisitor
         |> Rule.withExpressionVisitor expressionVisitor
         |> Rule.withFinalModuleEvaluation (finalEvaluation config)
         |> Rule.fromModuleRuleSchema
@@ -44,6 +48,63 @@ importVisitor config node context =
 
         _ ->
             ( [], context )
+
+
+declarationListVisitor : List (Node Declaration) -> Context.Module -> ( List (Error {}), Context.Module )
+declarationListVisitor nodes context =
+    ( [], List.foldl declarationVisitor context nodes )
+
+
+declarationVisitor : Node Declaration -> Context.Module -> Context.Module
+declarationVisitor node context =
+    case Node.value node of
+        Declaration.FunctionDeclaration { signature } ->
+            context |> maybeSignatureVisitor signature
+
+        _ ->
+            context
+
+
+maybeSignatureVisitor : Maybe (Node Signature) -> Context.Module -> Context.Module
+maybeSignatureVisitor maybeNode context =
+    case maybeNode of
+        Just node ->
+            context |> signatureVisitor node
+
+        Nothing ->
+            context
+
+
+signatureVisitor : Node Signature -> Context.Module -> Context.Module
+signatureVisitor node context =
+    typeAnnotationVisitor (node |> Node.value |> .typeAnnotation) context
+
+
+typeAnnotationListVisitor : List (Node TypeAnnotation) -> Context.Module -> Context.Module
+typeAnnotationListVisitor list context =
+    List.foldl typeAnnotationVisitor context list
+
+
+typeAnnotationVisitor : Node TypeAnnotation -> Context.Module -> Context.Module
+typeAnnotationVisitor node context =
+    case Node.value node of
+        TypeAnnotation.Typed moduleCall types ->
+            context
+                |> moduleCallVisitor moduleCall
+                |> typeAnnotationListVisitor types
+
+        _ ->
+            context
+
+
+moduleCallVisitor : Node ( ModuleName, String ) -> Context.Module -> Context.Module
+moduleCallVisitor node context =
+    case Node.value node of
+        ( [ moduleAlias ], function ) ->
+            Context.addModuleCall moduleAlias function (Node.range node) context
+
+        _ ->
+            context
 
 
 expressionVisitor : Node Expression -> Rule.Direction -> Context.Module -> ( List (Error {}), Context.Module )
