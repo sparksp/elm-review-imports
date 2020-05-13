@@ -12,8 +12,10 @@ all =
             \_ ->
                 """
 module Main exposing (main)
+import Html
 import Html.Attributes as A
-main = 1"""
+main = Html.div [ A.class "container" ] []
+"""
                     |> Review.Test.run
                         (Rule.config
                             [ ( [ "Html", "Attributes" ], "Attr" )
@@ -22,7 +24,14 @@ main = 1"""
                         )
                     |> Review.Test.expectErrors
                         [ incorrectAliasError "Attr" "Html.Attributes" "A"
-                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                            |> Review.Test.atExactly { start = { row = 4, column = 27 }, end = { row = 4, column = 28 } }
+                            |> Review.Test.whenFixed
+                                """
+module Main exposing (main)
+import Html
+import Html.Attributes as Attr
+main = Html.div [ Attr.class "container" ] []
+"""
                         ]
         , test "does not report modules imported with no alias" <|
             \_ ->
