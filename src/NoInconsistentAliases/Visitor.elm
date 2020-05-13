@@ -5,6 +5,7 @@ import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
+import Elm.Syntax.Pattern as Pattern exposing (Pattern)
 import Elm.Syntax.Signature exposing (Signature)
 import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
@@ -110,6 +111,11 @@ typeAnnotationVisitor node context =
                 |> moduleCallVisitor moduleCall
                 |> typeAnnotationListVisitor types
 
+        TypeAnnotation.FunctionTypeAnnotation argument return ->
+            context
+                |> typeAnnotationVisitor argument
+                |> typeAnnotationVisitor return
+
         _ ->
             context
 
@@ -130,11 +136,49 @@ expressionVisitor node direction context =
         ( Rule.OnEnter, Expression.FunctionOrValue [ moduleAlias ] function ) ->
             ( [], Context.addModuleCall moduleAlias function (Node.range node) context )
 
+        ( Rule.OnEnter, Expression.CaseExpression { cases } ) ->
+            ( [], context |> caseListVisitor cases )
+
         ( Rule.OnEnter, _ ) ->
             ( [], context )
 
         ( Rule.OnExit, _ ) ->
             ( [], context )
+
+
+caseListVisitor : List Expression.Case -> Context.Module -> Context.Module
+caseListVisitor list context =
+    List.foldl caseVisitor context list
+
+
+caseVisitor : Expression.Case -> Context.Module -> Context.Module
+caseVisitor ( pattern, _ ) context =
+    context |> patternVisitor pattern
+
+
+patternVisitor : Node Pattern -> Context.Module -> Context.Module
+patternVisitor node context =
+    case Node.value node of
+        Pattern.NamedPattern { moduleName, name } _ ->
+            case moduleName of
+                [ moduleAlias ] ->
+                    let
+                        { start } =
+                            Node.range node
+
+                        newEnd =
+                            { start | column = start.column + ([ moduleAlias, name ] |> formatModuleName |> String.length) }
+
+                        range =
+                            { start = start, end = newEnd }
+                    in
+                    context |> Context.addModuleCall moduleAlias name range
+
+                _ ->
+                    context
+
+        _ ->
+            context
 
 
 finalEvaluation : Config -> Context.Module -> List (Error {})
