@@ -172,6 +172,9 @@ expressionVisitor node direction context =
         ( Rule.OnEnter, Expression.LetExpression { declarations } ) ->
             ( [], context |> letDeclarationListVisitor declarations )
 
+        ( Rule.OnEnter, Expression.LambdaExpression { args } ) ->
+            ( [], context |> patternListVisitor args )
+
         ( Rule.OnEnter, _ ) ->
             ( [], context )
 

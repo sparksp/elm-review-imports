@@ -237,6 +237,47 @@ shiftRange input _ _ =
     range
 """
                         ]
+        , test "reports incorrect aliases in a lambda function" <|
+            \_ ->
+                """
+module NoCode exposing (visitor)
+import Elm.Syntax.Node as ESN
+import Review.Rule as Review
+visitor : List (ESN.Node String) -> List (Review.Error {})
+visitor list =
+    List.map (\\ESN.Node range value -> Review.error value) list
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            , ( [ "Review", "Rule" ], "Rule" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ incorrectAliasError "Node" "Elm.Syntax.Node" "ESN"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 30 } }
+                            |> Review.Test.whenFixed
+                                """
+module NoCode exposing (visitor)
+import Elm.Syntax.Node as Node
+import Review.Rule as Review
+visitor : List (Node.Node String) -> List (Review.Error {})
+visitor list =
+    List.map (\\Node.Node range value -> Review.error value) list
+"""
+                        , incorrectAliasError "Rule" "Review.Rule" "Review"
+                            |> Review.Test.atExactly { start = { row = 4, column = 23 }, end = { row = 4, column = 29 } }
+                            |> Review.Test.whenFixed
+                                """
+module NoCode exposing (visitor)
+import Elm.Syntax.Node as ESN
+import Review.Rule as Rule
+visitor : List (ESN.Node String) -> List (Rule.Error {})
+visitor list =
+    List.map (\\ESN.Node range value -> Rule.error value) list
+"""
+                        ]
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """
