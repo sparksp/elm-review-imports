@@ -278,19 +278,25 @@ incorrectAliasError config badAlias =
             BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
     in
     Rule.errorWithFix
-        { message = incorrectAliasMessage badAlias
-        , details = [ "This import does not use your preferred alias " ++ quote expectedAlias ++ "." ]
-        }
+        (incorrectAliasMessage expectedAlias badAlias)
         badRange
         (fixModuleAlias :: fixModuleUses)
 
 
-incorrectAliasMessage : BadAlias -> String
-incorrectAliasMessage badAlias =
-    "Incorrect alias "
-        ++ BadAlias.mapName quote badAlias
-        ++ " for module "
-        ++ BadAlias.mapModuleName (formatModuleName >> quote) badAlias
+incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
+incorrectAliasMessage expectedAlias badAlias =
+    let
+        moduleName =
+            BadAlias.mapModuleName (formatModuleName >> quote) badAlias
+    in
+    { message =
+        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName
+    , details =
+        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
+        , "You should update the alias to be consistent with the rest of the project. "
+            ++ "Remember to change all references to the alias in this module too."
+        ]
+    }
 
 
 fixModuleUse : String -> ModuleUse -> Fix

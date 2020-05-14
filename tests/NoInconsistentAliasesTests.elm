@@ -324,6 +324,10 @@ incorrectAliasError : String -> String -> String -> Review.Test.ExpectedError
 incorrectAliasError expectedAlias moduleName wrongAlias =
     Review.Test.error
         { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`"
-        , details = [ "This import does not use your preferred alias `" ++ expectedAlias ++ "`." ]
+        , details =
+            [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+            , "You should update the alias to be consistent with the rest of the project. "
+                ++ "Remember to change all references to the alias in this module too."
+            ]
         , under = wrongAlias
         }
