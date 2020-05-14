@@ -8,11 +8,19 @@ type Config
     = Aliases (Dict ModuleName String)
 
 
-config : List ( ModuleName, String ) -> Config
+config : List ( String, String ) -> Config
 config aliases =
-    Aliases (Dict.fromList aliases)
+    aliases
+        |> List.map (Tuple.mapFirst toModuleName)
+        |> Dict.fromList
+        |> Aliases
 
 
-lookupAlias : ModuleName -> Config -> Maybe String
+lookupAlias : String -> Config -> Maybe String
 lookupAlias moduleName (Aliases aliases) =
-    Dict.get moduleName aliases
+    Dict.get (toModuleName moduleName) aliases
+
+
+toModuleName : String -> ModuleName
+toModuleName moduleName =
+    String.split "." moduleName

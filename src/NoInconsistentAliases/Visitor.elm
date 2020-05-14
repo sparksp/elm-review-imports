@@ -31,7 +31,7 @@ importVisitor : Config -> Node Import -> Context.Module -> ( List (Error {}), Co
 importVisitor config node context =
     let
         moduleName =
-            node |> Node.value |> .moduleName |> Node.value
+            node |> Node.value |> .moduleName |> Node.value |> formatModuleName
 
         maybeModuleAlias =
             node |> Node.value |> .moduleAlias |> Maybe.map (Node.map formatModuleName)
@@ -287,7 +287,7 @@ incorrectAliasMessage : String -> BadAlias -> { message : String, details : List
 incorrectAliasMessage expectedAlias badAlias =
     let
         moduleName =
-            BadAlias.mapModuleName (formatModuleName >> quote) badAlias
+            BadAlias.mapModuleName quote badAlias
     in
     { message =
         "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName

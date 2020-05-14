@@ -6,7 +6,6 @@ module NoInconsistentAliases exposing (rule, config)
 
 -}
 
-import Elm.Syntax.ModuleName exposing (ModuleName)
 import NoInconsistentAliases.Config as Config exposing (Config)
 import NoInconsistentAliases.Visitor as Visitor
 import Review.Rule exposing (Rule)
@@ -17,7 +16,7 @@ import Review.Rule exposing (Rule)
     config : List Rule
     config =
         [ NoInconsistentAliases.config
-            [ ( [ "Html", "Attributes" ], "Attr" )
+            [ ( "Html.Attributes", "Attr" )
             ]
             |> NoInconsistentAliases.rule
         ]
@@ -31,12 +30,12 @@ rule =
 {-| Provide a list of preferred names to be enforced. If we find any of the given modules imported with a different alias we will report them.
 
     NoInconsistentAliases.config
-        [ ( [ "Html", "Attributes" ], "Attr" )
-        , ( [ "Json", "Decode" ], "Decode" )
-        , ( [ "Json", "Encode" ], "Encode" )
+        [ ( "Html.Attributes", "Attr" )
+        , ( "Json.Decode", "Decode" )
+        , ( "Json.Encode", "Encode" )
         ]
 
 -}
-config : List ( ModuleName, String ) -> Config
+config : List ( String, String ) -> Config
 config =
     Config.config

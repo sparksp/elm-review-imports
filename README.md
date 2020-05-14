@@ -20,9 +20,9 @@ import Review.Rule exposing (Rule)
 config : List Rule
 config =
     [ NoInconsistentAliases.config
-        [ ( [ "Html", "Attributes" ], "Attr" )
-        , ( [ "Json", "Decode" ], "Decode" )
-        , ( [ "Json", "Encode" ], "Encode" )
+        [ ( "Html.Attributes", "Attr" )
+        , ( "Json.Decode", "Decode" )
+        , ( "Json.Encode", "Encode" )
         ]
         |> NoInconsistentAliases.rule
     ]

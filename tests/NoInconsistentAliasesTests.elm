@@ -18,7 +18,7 @@ main = Html.div [ A.class "container" ] []
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Html", "Attributes" ], "Attr" )
+                            [ ( "Html.Attributes", "Attr" )
                             ]
                             |> rule
                         )
@@ -45,7 +45,7 @@ main =
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Json", "Encode" ], "Encode" )
+                            [ ( "Json.Encode", "Encode" )
                             ]
                             |> rule
                         )
@@ -75,7 +75,7 @@ main =
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Json", "Encode" ], "Encode" )
+                            [ ( "Json.Encode", "Encode" )
                             ]
                             |> rule
                         )
@@ -104,7 +104,7 @@ main = Page.main
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Json", "Encode" ], "Encode" )
+                            [ ( "Json.Encode", "Encode" )
                             ]
                             |> rule
                         )
@@ -136,8 +136,8 @@ expressionVisitor node =
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Elm", "Syntax", "Expression" ], "Expression" )
-                            , ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            [ ( "Elm.Syntax.Expression", "Expression" )
+                            , ( "Elm.Syntax.Node", "Node" )
                             ]
                             |> rule
                         )
@@ -182,7 +182,7 @@ getRange ((ESN.Node range _) as node) = range
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            [ ( "Elm.Syntax.Node", "Node" )
                             ]
                             |> rule
                         )
@@ -214,7 +214,7 @@ shiftRange input _ _ =
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
+                            [ ( "Elm.Syntax.Node", "Node" )
                             ]
                             |> rule
                         )
@@ -249,8 +249,8 @@ visitor list =
 """
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Elm", "Syntax", "Node" ], "Node" )
-                            , ( [ "Review", "Rule" ], "Rule" )
+                            [ ( "Elm.Syntax.Node", "Node" )
+                            , ( "Review.Rule", "Rule" )
                             ]
                             |> rule
                         )
@@ -286,7 +286,7 @@ import Html.Attributes
 main = 1"""
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Html", "Attributes" ], "Attr" )
+                            [ ( "Html.Attributes", "Attr" )
                             ]
                             |> rule
                         )
@@ -299,7 +299,7 @@ import Html.Attributes as Attr
 main = 1"""
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Html", "Attributes" ], "Attr" )
+                            [ ( "Html.Attributes", "Attr" )
                             ]
                             |> rule
                         )
@@ -312,7 +312,7 @@ import Json.Encode as E
 main = 1"""
                     |> Review.Test.run
                         (Rule.config
-                            [ ( [ "Html", "Attributes" ], "Attr" )
+                            [ ( "Html.Attributes", "Attr" )
                             ]
                             |> rule
                         )
