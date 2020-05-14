@@ -36,6 +36,31 @@ importVisitor config node context =
         maybeModuleAlias =
             node |> Node.value |> .moduleAlias |> Maybe.map (Node.map formatModuleName)
     in
+    ( []
+    , context
+        |> rememberModuleName moduleName
+        |> rememberModuleAlias moduleName maybeModuleAlias
+        |> rememberBadAlias config moduleName maybeModuleAlias
+    )
+
+
+rememberModuleName : String -> Context.Module -> Context.Module
+rememberModuleName moduleName context =
+    context |> Context.addModuleAlias moduleName moduleName
+
+
+rememberModuleAlias : String -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberModuleAlias moduleName maybeModuleAlias context =
+    case maybeModuleAlias of
+        Just moduleAlias ->
+            context |> Context.addModuleAlias moduleName (Node.value moduleAlias)
+
+        Nothing ->
+            context
+
+
+rememberBadAlias : Config -> String -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberBadAlias config moduleName maybeModuleAlias context =
     case ( Config.lookupAlias moduleName config, maybeModuleAlias ) of
         ( Just expectedAlias, Just moduleAlias ) ->
             if expectedAlias /= (moduleAlias |> Node.value) then
@@ -43,13 +68,13 @@ importVisitor config node context =
                     badAlias =
                         BadAlias.new (Node.value moduleAlias) moduleName (Node.range moduleAlias)
                 in
-                ( [], Context.addBadAlias badAlias context )
+                context |> Context.addBadAlias badAlias
 
             else
-                ( [], context )
+                context
 
         _ ->
-            ( [], context )
+            context
 
 
 declarationListVisitor : List (Node Declaration) -> Context.Module -> ( List (Error {}), Context.Module )
@@ -258,11 +283,11 @@ patternVisitor node context =
 
 finalEvaluation : Config -> Context.Module -> List (Error {})
 finalEvaluation config context =
-    Context.mapBadAliases (incorrectAliasError config) context
+    Context.mapBadAliases (incorrectAliasError config context) context
 
 
-incorrectAliasError : Config -> BadAlias -> Error {}
-incorrectAliasError config badAlias =
+incorrectAliasError : Config -> Context.Module -> BadAlias -> Error {}
+incorrectAliasError config context badAlias =
     let
         expectedAlias =
             BadAlias.mapModuleName (\name -> Config.lookupAlias name config) badAlias
@@ -271,16 +296,36 @@ incorrectAliasError config badAlias =
         badRange =
             BadAlias.range badAlias
 
-        fixModuleAlias =
-            Fix.replaceRangeBy badRange expectedAlias
+        moduleName =
+            BadAlias.mapModuleName identity badAlias
 
-        fixModuleUses =
-            BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
+        aliasClash =
+            context
+                |> Context.getModuleForAlias expectedAlias
+                |> Maybe.andThen
+                    (\collisionName ->
+                        if collisionName == moduleName then
+                            Nothing
+
+                        else
+                            Just collisionName
+                    )
+
+        ( makeMessage, fixes ) =
+            case aliasClash of
+                Nothing ->
+                    ( incorrectAliasMessage
+                    , Fix.replaceRangeBy badRange expectedAlias
+                        :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
+                    )
+
+                Just collisionName ->
+                    ( collisionAliasMessage collisionName, [] )
     in
     Rule.errorWithFix
-        (incorrectAliasMessage expectedAlias badAlias)
+        (makeMessage expectedAlias badAlias)
         badRange
-        (fixModuleAlias :: fixModuleUses)
+        fixes
 
 
 incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
@@ -290,10 +335,27 @@ incorrectAliasMessage expectedAlias badAlias =
             BadAlias.mapModuleName quote badAlias
     in
     { message =
-        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName
+        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName ++ "."
     , details =
         [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
         , "You should update the alias to be consistent with the rest of the project. "
+            ++ "Remember to change all references to the alias in this module too."
+        ]
+    }
+
+
+collisionAliasMessage : String -> String -> BadAlias -> { message : String, details : List String }
+collisionAliasMessage collisionName expectedAlias badAlias =
+    let
+        moduleName =
+            BadAlias.mapModuleName quote badAlias
+    in
+    { message =
+        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName ++ "."
+    , details =
+        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
+        , "Your preferred alias has already been taken by " ++ quote collisionName ++ "."
+        , "You should change the alias for both modules to be consistent with the rest of the project. "
             ++ "Remember to change all references to the alias in this module too."
         ]
     }

@@ -33,7 +33,7 @@ import Html.Attributes as Attr
 main = Html.div [ Attr.class "container" ] []
 """
                         ]
-        , test "reports incorrect aliases in a function signature" <|
+        , test "fixes incorrect aliases in a function signature" <|
             \_ ->
                 """
 module Main exposing (main)
@@ -62,7 +62,7 @@ main =
     Page.program
 """
                         ]
-        , test "reports incorrect aliases in a type alias" <|
+        , test "fixes incorrect aliases in a type alias" <|
             \_ ->
                 """
 module Main exposing (main)
@@ -93,7 +93,7 @@ main =
     Page.program
 """
                         ]
-        , test "reports incorrect aliases in a custom type constructor" <|
+        , test "fixes incorrect aliases in a custom type constructor" <|
             \_ ->
                 """
 module Main exposing (main)
@@ -120,7 +120,7 @@ type JsonValue = JsonValue Encode.Value
 main = Page.main
 """
                         ]
-        , test "reports incorrect aliases in case expressions" <|
+        , test "fixes incorrect aliases in case expressions" <|
             \_ ->
                 """
 module Visitor exposing (expressionVisitor)
@@ -173,7 +173,7 @@ expressionVisitor node =
             []
 """
                         ]
-        , test "reports incorrect aliases in function arguments" <|
+        , test "fixes incorrect aliases in function arguments" <|
             \_ ->
                 """
 module Visitor exposing (getRange)
@@ -196,7 +196,7 @@ import Elm.Syntax.Node as Node
 getRange ((Node.Node range _) as node) = range
 """
                         ]
-        , test "reports incorrect aliases in let blocks" <|
+        , test "fixes incorrect aliases in let blocks" <|
             \_ ->
                 """
 module Visitor exposing (shiftRange)
@@ -237,7 +237,7 @@ shiftRange input _ _ =
     range
 """
                         ]
-        , test "reports incorrect aliases in a lambda function" <|
+        , test "fixes incorrect aliases in a lambda function" <|
             \_ ->
                 """
 module NoCode exposing (visitor)
@@ -277,6 +277,42 @@ visitor : List (ESN.Node String) -> List (Rule.Error {})
 visitor list =
     List.map (\\ESN.Node range value -> Rule.error value) list
 """
+                        ]
+        , test "does not offer a fix when there's an alias collision" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = div [ A.class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            ]
+                            |> Rule.rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ aliasCollisionError "Attr" "Html.Attributes" "A" "Svg.Attributes"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+        , test "does not offer a fix when there's a module collision" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html.Attributes as A
+import Attr
+view = div [ A.class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            ]
+                            |> Rule.rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ aliasCollisionError "Attr" "Html.Attributes" "A" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
                         ]
         , test "does not report modules imported with no alias" <|
             \_ ->
@@ -323,10 +359,24 @@ main = 1"""
 incorrectAliasError : String -> String -> String -> Review.Test.ExpectedError
 incorrectAliasError expectedAlias moduleName wrongAlias =
     Review.Test.error
-        { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`"
+        { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
         , details =
             [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
             , "You should update the alias to be consistent with the rest of the project. "
+                ++ "Remember to change all references to the alias in this module too."
+            ]
+        , under = wrongAlias
+        }
+
+
+aliasCollisionError : String -> String -> String -> String -> Review.Test.ExpectedError
+aliasCollisionError expectedAlias moduleName wrongAlias collisionName =
+    Review.Test.error
+        { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
+        , details =
+            [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+            , "Your preferred alias has already been taken by `" ++ collisionName ++ "`."
+            , "You should change the alias for both modules to be consistent with the rest of the project. "
                 ++ "Remember to change all references to the alias in this module too."
             ]
         , under = wrongAlias

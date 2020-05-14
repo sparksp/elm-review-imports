@@ -1,5 +1,18 @@
-module NoInconsistentAliases.Context exposing (Module, addBadAlias, addModuleCall, initial, mapBadAliases)
+module NoInconsistentAliases.Context exposing
+    ( Module, initial
+    , addModuleAlias, getModuleForAlias
+    , addBadAlias, mapBadAliases, addModuleCall
+    )
 
+{-|
+
+@docs Module, initial
+@docs addModuleAlias, getModuleForAlias
+@docs addBadAlias, mapBadAliases, addModuleCall
+
+-}
+
+import Dict exposing (Dict)
 import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.BadAliasSet as BadAliasSet exposing (BadAliasSet)
@@ -7,24 +20,43 @@ import NoInconsistentAliases.ModuleUse as ModuleUse
 
 
 type Module
-    = BadAliases BadAliasSet
+    = Module
+        { aliases : Dict String String
+        , badAliases : BadAliasSet
+        }
 
 
 initial : Module
 initial =
-    BadAliases BadAliasSet.empty
+    Module
+        { aliases = Dict.empty
+        , badAliases = BadAliasSet.empty
+        }
+
+
+addModuleAlias : String -> String -> Module -> Module
+addModuleAlias moduleName moduleAlias (Module context) =
+    Module { context | aliases = Dict.insert moduleAlias moduleName context.aliases }
 
 
 addBadAlias : BadAlias -> Module -> Module
-addBadAlias badAlias (BadAliases aliases) =
-    BadAliases (BadAliasSet.insert badAlias aliases)
+addBadAlias badAlias (Module context) =
+    Module { context | badAliases = BadAliasSet.insert badAlias context.badAliases }
 
 
 addModuleCall : BadAlias.Name -> String -> Range -> Module -> Module
-addModuleCall moduleAlias function range (BadAliases aliases) =
-    BadAliases (BadAliasSet.use moduleAlias (ModuleUse.new function range) aliases)
+addModuleCall moduleAlias function range (Module context) =
+    Module
+        { context
+            | badAliases = BadAliasSet.use moduleAlias (ModuleUse.new function range) context.badAliases
+        }
 
 
 mapBadAliases : (BadAlias -> a) -> Module -> List a
-mapBadAliases mapper (BadAliases aliases) =
-    BadAliasSet.map mapper aliases
+mapBadAliases mapper (Module { badAliases }) =
+    BadAliasSet.map mapper badAliases
+
+
+getModuleForAlias : String -> Module -> Maybe String
+getModuleForAlias moduleAlias (Module { aliases }) =
+    Dict.get moduleAlias aliases
