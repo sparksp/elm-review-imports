@@ -1,0 +1,1 @@
+../../src/NoInconsistentAliases.elm
