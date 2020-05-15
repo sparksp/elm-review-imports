@@ -66,7 +66,7 @@ rememberBadAlias config moduleName maybeModuleAlias context =
             if expectedAlias /= (moduleAlias |> Node.value) then
                 let
                     badAlias =
-                        BadAlias.new (Node.value moduleAlias) moduleName (Node.range moduleAlias)
+                        BadAlias.new (Node.value moduleAlias) moduleName expectedAlias (Node.range moduleAlias)
                 in
                 context |> Context.addBadAlias badAlias
 
@@ -293,9 +293,7 @@ foldBadAliasError config context badAlias errors =
             badAlias |> BadAlias.mapModuleName identity
 
         expectedAlias =
-            config
-                |> Config.lookupAlias moduleName
-                |> Maybe.withDefault ""
+            badAlias |> BadAlias.mapExpectedName identity
 
         moduleClash =
             detectModuleCollision context moduleName expectedAlias
