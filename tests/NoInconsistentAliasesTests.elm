@@ -8,6 +8,45 @@ import Test exposing (Test, describe, test)
 all : Test
 all =
     describe "NoInconsistentAliases"
+        [ preferredAliasTests
+        , missingAliasTests
+        ]
+
+
+missingAliasTests : Test
+missingAliasTests =
+    Test.concat
+        [ test "reports missing alias when one should be used" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html
+import Html.Attributes
+view = Html.div [ Html.Attributes.class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectErrors
+                        [ missingAliasError "Attr" "Html.Attributes"
+                            |> Review.Test.atExactly { start = { row = 4, column = 8 }, end = { row = 4, column = 23 } }
+                            |> Review.Test.whenFixed
+                                """
+module Page exposing (view)
+import Html
+import Html.Attributes as Attr
+view = Html.div [ Attr.class "container" ] []
+"""
+                        ]
+        ]
+
+
+preferredAliasTests : Test
+preferredAliasTests =
+    Test.concat
         [ test "reports incorrect aliases" <|
             \_ ->
                 """
@@ -396,4 +435,17 @@ aliasCollisionError expectedAlias moduleName wrongAlias collisionName =
                 ++ "Remember to change all references to the alias in this module too."
             ]
         , under = wrongAlias
+        }
+
+
+missingAliasError : String -> String -> Review.Test.ExpectedError
+missingAliasError expectedAlias moduleName =
+    Review.Test.error
+        { message = "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
+        , details =
+            [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+            , "You should update the alias to be consistent with the rest of the project. "
+                ++ "Remember to change all references to the alias in this module too."
+            ]
+        , under = moduleName
         }
