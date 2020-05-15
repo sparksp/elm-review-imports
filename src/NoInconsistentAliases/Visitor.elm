@@ -283,49 +283,65 @@ patternVisitor node context =
 
 finalEvaluation : Config -> Context.Module -> List (Error {})
 finalEvaluation config context =
-    Context.mapBadAliases (incorrectAliasError config context) context
+    context |> Context.foldBadAliases (foldBadAliasError config context) []
 
 
-incorrectAliasError : Config -> Context.Module -> BadAlias -> Error {}
-incorrectAliasError config context badAlias =
+foldBadAliasError : Config -> Context.Module -> BadAlias -> List (Error {}) -> List (Error {})
+foldBadAliasError config context badAlias errors =
     let
+        moduleName =
+            badAlias |> BadAlias.mapModuleName identity
+
         expectedAlias =
-            BadAlias.mapModuleName (\name -> Config.lookupAlias name config) badAlias
+            config
+                |> Config.lookupAlias moduleName
                 |> Maybe.withDefault ""
 
-        badRange =
-            BadAlias.range badAlias
-
-        moduleName =
-            BadAlias.mapModuleName identity badAlias
+        moduleClash =
+            detectModuleCollision context moduleName expectedAlias
 
         aliasClash =
-            context
-                |> Context.getModuleForAlias expectedAlias
-                |> Maybe.andThen
-                    (\collisionName ->
-                        if collisionName == moduleName then
-                            Nothing
-
-                        else
-                            Just collisionName
-                    )
-
-        ( makeMessage, fixes ) =
-            case aliasClash of
-                Nothing ->
-                    ( incorrectAliasMessage
-                    , Fix.replaceRangeBy badRange expectedAlias
-                        :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
-                    )
-
-                Just collisionName ->
-                    ( collisionAliasMessage collisionName, [] )
+            detectAliasCollision config moduleClash
     in
-    Rule.errorWithFix
-        (makeMessage expectedAlias badAlias)
-        badRange
-        fixes
+    case ( aliasClash, moduleClash ) of
+        ( Just _, _ ) ->
+            errors
+
+        ( Nothing, Just collisionName ) ->
+            Rule.error (collisionAliasMessage collisionName expectedAlias badAlias) (BadAlias.range badAlias)
+                :: errors
+
+        ( Nothing, Nothing ) ->
+            let
+                badRange =
+                    BadAlias.range badAlias
+
+                fixes =
+                    Fix.replaceRangeBy badRange expectedAlias
+                        :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
+            in
+            Rule.errorWithFix (incorrectAliasMessage expectedAlias badAlias) badRange fixes
+                :: errors
+
+
+detectModuleCollision : Context.Module -> String -> String -> Maybe String
+detectModuleCollision context moduleName expectedAlias =
+    context
+        |> Context.getModuleForAlias expectedAlias
+        |> Maybe.andThen
+            (\collisionName ->
+                if collisionName == moduleName then
+                    Nothing
+
+                else
+                    Just collisionName
+            )
+
+
+detectAliasCollision : Config -> Maybe String -> Maybe String
+detectAliasCollision config moduleClash =
+    moduleClash
+        |> Maybe.andThen (\name -> Config.lookupAlias name config)
 
 
 incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }

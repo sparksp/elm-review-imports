@@ -1,14 +1,14 @@
 module NoInconsistentAliases.Context exposing
     ( Module, initial
     , addModuleAlias, getModuleForAlias
-    , addBadAlias, mapBadAliases, addModuleCall
+    , addBadAlias, addModuleCall, foldBadAliases
     )
 
 {-|
 
 @docs Module, initial
 @docs addModuleAlias, getModuleForAlias
-@docs addBadAlias, mapBadAliases, addModuleCall
+@docs addBadAlias, addModuleCall, foldBadAliases
 
 -}
 
@@ -52,9 +52,9 @@ addModuleCall moduleAlias function range (Module context) =
         }
 
 
-mapBadAliases : (BadAlias -> a) -> Module -> List a
-mapBadAliases mapper (Module { badAliases }) =
-    BadAliasSet.map mapper badAliases
+foldBadAliases : (BadAlias -> a -> a) -> a -> Module -> a
+foldBadAliases folder start (Module { badAliases }) =
+    BadAliasSet.fold folder start badAliases
 
 
 getModuleForAlias : String -> Module -> Maybe String

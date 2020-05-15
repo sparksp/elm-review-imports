@@ -290,7 +290,7 @@ view = div [ A.class "container" ] []
                         (Rule.config
                             [ ( "Html.Attributes", "Attr" )
                             ]
-                            |> Rule.rule
+                            |> rule
                         )
                     |> Review.Test.expectErrors
                         [ aliasCollisionError "Attr" "Html.Attributes" "A" "Svg.Attributes"
@@ -308,12 +308,28 @@ view = div [ A.class "container" ] []
                         (Rule.config
                             [ ( "Html.Attributes", "Attr" )
                             ]
-                            |> Rule.rule
+                            |> rule
                         )
                     |> Review.Test.expectErrors
                         [ aliasCollisionError "Attr" "Html.Attributes" "A" "Attr"
                             |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
                         ]
+        , test "does not report when there's a collision with another preferred alias" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = div [ A.class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            , ( "Svg.Attributes", "Attr" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectNoErrors
         , test "does not report modules imported with no alias" <|
             \_ ->
                 """
