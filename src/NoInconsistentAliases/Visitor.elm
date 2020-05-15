@@ -20,7 +20,6 @@ import Review.Rule as Rule exposing (Error, Rule)
 rule : Config -> Rule
 rule config =
     let
-        lookupAlias : Config.AliasLookup
         lookupAlias =
             Config.lookupAlias config
     in
@@ -32,7 +31,7 @@ rule config =
         |> Rule.fromModuleRuleSchema
 
 
-importVisitor : Config.AliasLookup -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
+importVisitor : AliasLookup -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
 importVisitor lookupAlias node context =
     let
         moduleName =
@@ -64,7 +63,7 @@ rememberModuleAlias moduleName maybeModuleAlias context =
             context
 
 
-rememberBadAlias : Config.AliasLookup -> String -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberBadAlias : AliasLookup -> String -> Maybe (Node String) -> Context.Module -> Context.Module
 rememberBadAlias lookupAlias moduleName maybeModuleAlias context =
     case ( lookupAlias moduleName, maybeModuleAlias ) of
         ( Just expectedAlias, Just moduleAlias ) ->
@@ -286,17 +285,16 @@ patternVisitor node context =
             context
 
 
-finalEvaluation : Config.AliasLookup -> Context.Module -> List (Error {})
+finalEvaluation : AliasLookup -> Context.Module -> List (Error {})
 finalEvaluation lookupAlias context =
     let
-        lookupModuleName : Context.ModuleNameLookup
         lookupModuleName =
             Context.lookupModuleName context
     in
     context |> Context.foldBadAliases (foldBadAliasError lookupAlias lookupModuleName) []
 
 
-foldBadAliasError : Config.AliasLookup -> Context.ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
+foldBadAliasError : AliasLookup -> ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
 foldBadAliasError lookupAlias lookupModuleName badAlias errors =
     let
         moduleName =
@@ -391,3 +389,11 @@ formatModuleName moduleName =
 quote : String -> String
 quote string =
     "`" ++ string ++ "`"
+
+
+type alias AliasLookup =
+    String -> Maybe String
+
+
+type alias ModuleNameLookup =
+    String -> Maybe String
