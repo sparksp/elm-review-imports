@@ -288,11 +288,16 @@ patternVisitor node context =
 
 finalEvaluation : Config.AliasLookup -> Context.Module -> List (Error {})
 finalEvaluation lookupAlias context =
-    context |> Context.foldBadAliases (foldBadAliasError lookupAlias context) []
+    let
+        lookupModuleName : Context.ModuleNameLookup
+        lookupModuleName =
+            Context.lookupModuleName context
+    in
+    context |> Context.foldBadAliases (foldBadAliasError lookupAlias lookupModuleName) []
 
 
-foldBadAliasError : Config.AliasLookup -> Context.Module -> BadAlias -> List (Error {}) -> List (Error {})
-foldBadAliasError lookupAlias context badAlias errors =
+foldBadAliasError : Config.AliasLookup -> Context.ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
+foldBadAliasError lookupAlias lookupModuleName badAlias errors =
     let
         moduleName =
             badAlias |> BadAlias.mapModuleName identity
@@ -301,7 +306,7 @@ foldBadAliasError lookupAlias context badAlias errors =
             badAlias |> BadAlias.mapExpectedName identity
 
         moduleClash =
-            detectModuleCollision context moduleName expectedAlias
+            detectCollision (lookupModuleName expectedAlias) moduleName
 
         aliasClash =
             moduleClash |> Maybe.andThen lookupAlias
@@ -327,10 +332,9 @@ foldBadAliasError lookupAlias context badAlias errors =
                 :: errors
 
 
-detectModuleCollision : Context.Module -> String -> String -> Maybe String
-detectModuleCollision context moduleName expectedAlias =
-    context
-        |> Context.getModuleForAlias expectedAlias
+detectCollision : Maybe String -> String -> Maybe String
+detectCollision maybeCollisionName moduleName =
+    maybeCollisionName
         |> Maybe.andThen
             (\collisionName ->
                 if collisionName == moduleName then

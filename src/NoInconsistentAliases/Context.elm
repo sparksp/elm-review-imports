@@ -1,13 +1,13 @@
 module NoInconsistentAliases.Context exposing
     ( Module, initial
-    , addModuleAlias, getModuleForAlias
+    , addModuleAlias, lookupModuleName, ModuleNameLookup
     , addBadAlias, addModuleCall, foldBadAliases
     )
 
 {-|
 
 @docs Module, initial
-@docs addModuleAlias, getModuleForAlias
+@docs addModuleAlias, lookupModuleName, ModuleNameLookup
 @docs addBadAlias, addModuleCall, foldBadAliases
 
 -}
@@ -24,6 +24,10 @@ type Module
         { aliases : Dict String String
         , badAliases : BadAliasSet
         }
+
+
+type alias ModuleNameLookup =
+    String -> Maybe String
 
 
 initial : Module
@@ -57,6 +61,6 @@ foldBadAliases folder start (Module { badAliases }) =
     BadAliasSet.fold folder start badAliases
 
 
-getModuleForAlias : String -> Module -> Maybe String
-getModuleForAlias moduleAlias (Module { aliases }) =
+lookupModuleName : Module -> ModuleNameLookup
+lookupModuleName (Module { aliases }) moduleAlias =
     Dict.get moduleAlias aliases
