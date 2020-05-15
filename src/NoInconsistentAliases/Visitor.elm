@@ -19,16 +19,21 @@ import Review.Rule as Rule exposing (Error, Rule)
 
 rule : Config -> Rule
 rule config =
+    let
+        lookupAlias : Config.AliasLookup
+        lookupAlias =
+            Config.lookupAlias config
+    in
     Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
-        |> Rule.withImportVisitor (importVisitor config)
+        |> Rule.withImportVisitor (importVisitor lookupAlias)
         |> Rule.withDeclarationListVisitor declarationListVisitor
         |> Rule.withExpressionVisitor expressionVisitor
-        |> Rule.withFinalModuleEvaluation (finalEvaluation config)
+        |> Rule.withFinalModuleEvaluation (finalEvaluation lookupAlias)
         |> Rule.fromModuleRuleSchema
 
 
-importVisitor : Config -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
-importVisitor config node context =
+importVisitor : Config.AliasLookup -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
+importVisitor lookupAlias node context =
     let
         moduleName =
             node |> Node.value |> .moduleName |> Node.value |> formatModuleName
@@ -40,7 +45,7 @@ importVisitor config node context =
     , context
         |> rememberModuleName moduleName
         |> rememberModuleAlias moduleName maybeModuleAlias
-        |> rememberBadAlias config moduleName maybeModuleAlias
+        |> rememberBadAlias lookupAlias moduleName maybeModuleAlias
     )
 
 
@@ -59,9 +64,9 @@ rememberModuleAlias moduleName maybeModuleAlias context =
             context
 
 
-rememberBadAlias : Config -> String -> Maybe (Node String) -> Context.Module -> Context.Module
-rememberBadAlias config moduleName maybeModuleAlias context =
-    case ( Config.lookupAlias moduleName config, maybeModuleAlias ) of
+rememberBadAlias : Config.AliasLookup -> String -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberBadAlias lookupAlias moduleName maybeModuleAlias context =
+    case ( lookupAlias moduleName, maybeModuleAlias ) of
         ( Just expectedAlias, Just moduleAlias ) ->
             if expectedAlias /= (moduleAlias |> Node.value) then
                 let
@@ -281,13 +286,13 @@ patternVisitor node context =
             context
 
 
-finalEvaluation : Config -> Context.Module -> List (Error {})
-finalEvaluation config context =
-    context |> Context.foldBadAliases (foldBadAliasError config context) []
+finalEvaluation : Config.AliasLookup -> Context.Module -> List (Error {})
+finalEvaluation lookupAlias context =
+    context |> Context.foldBadAliases (foldBadAliasError lookupAlias context) []
 
 
-foldBadAliasError : Config -> Context.Module -> BadAlias -> List (Error {}) -> List (Error {})
-foldBadAliasError config context badAlias errors =
+foldBadAliasError : Config.AliasLookup -> Context.Module -> BadAlias -> List (Error {}) -> List (Error {})
+foldBadAliasError lookupAlias context badAlias errors =
     let
         moduleName =
             badAlias |> BadAlias.mapModuleName identity
@@ -299,7 +304,7 @@ foldBadAliasError config context badAlias errors =
             detectModuleCollision context moduleName expectedAlias
 
         aliasClash =
-            detectAliasCollision config moduleClash
+            moduleClash |> Maybe.andThen lookupAlias
     in
     case ( aliasClash, moduleClash ) of
         ( Just _, _ ) ->
@@ -334,12 +339,6 @@ detectModuleCollision context moduleName expectedAlias =
                 else
                     Just collisionName
             )
-
-
-detectAliasCollision : Config -> Maybe String -> Maybe String
-detectAliasCollision config moduleClash =
-    moduleClash
-        |> Maybe.andThen (\name -> Config.lookupAlias name config)
 
 
 incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }

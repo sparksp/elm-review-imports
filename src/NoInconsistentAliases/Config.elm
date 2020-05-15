@@ -1,4 +1,4 @@
-module NoInconsistentAliases.Config exposing (Config, config, lookupAlias)
+module NoInconsistentAliases.Config exposing (AliasLookup, Config, config, lookupAlias)
 
 import Dict exposing (Dict)
 import Elm.Syntax.ModuleName exposing (ModuleName)
@@ -6,6 +6,10 @@ import Elm.Syntax.ModuleName exposing (ModuleName)
 
 type Config
     = Aliases (Dict ModuleName String)
+
+
+type alias AliasLookup =
+    String -> Maybe String
 
 
 config : List ( String, String ) -> Config
@@ -16,8 +20,8 @@ config aliases =
         |> Aliases
 
 
-lookupAlias : String -> Config -> Maybe String
-lookupAlias moduleName (Aliases aliases) =
+lookupAlias : Config -> AliasLookup
+lookupAlias (Aliases aliases) moduleName =
     Dict.get (toModuleName moduleName) aliases
 
 
