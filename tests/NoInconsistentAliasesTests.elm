@@ -41,6 +41,21 @@ import Html.Attributes as Attr
 view = Html.div [ Attr.class "container" ] []
 """
                         ]
+        , test "does not report missing aliases when not used" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html
+import Html.Attributes exposing (class)
+view = Html.div [ class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            ]
+                            |> rule
+                        )
+                    |> Review.Test.expectNoErrors
         ]
 
 
