@@ -15,14 +15,15 @@ import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoExposingEverything
 import NoImportingEverything
+import NoInconsistentAliases
 import NoMissingTypeAnnotation
 import NoUnused.CustomTypeConstructors
 import NoUnused.Dependencies
 import NoUnused.Exports
 import NoUnused.Modules
 import NoUnused.Variables
-import UseCamelCase
 import Review.Rule exposing (Rule)
+import UseCamelCase
 
 
 config : List Rule
@@ -31,6 +32,10 @@ config =
     , NoDebug.TodoOrToString.rule
     , NoExposingEverything.rule
     , NoImportingEverything.rule []
+    , NoInconsistentAliases.config
+        [ ( "Review.Rule", "Rule" )
+        ]
+        |> NoInconsistentAliases.rule
     , NoMissingTypeAnnotation.rule
     , NoUnused.CustomTypeConstructors.rule []
     , NoUnused.Dependencies.rule

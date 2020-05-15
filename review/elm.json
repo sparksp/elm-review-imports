@@ -13,7 +13,7 @@
             "jfmengels/review-common": "1.0.0",
             "jfmengels/review-debug": "2.0.1",
             "jfmengels/review-unused": "2.0.2",
-            "sparksp/elm-review-camelcase": "1.0.1",
+            "sparksp/elm-review-camelcase": "1.0.2",
             "stil4m/elm-syntax": "7.1.1"
         },
         "indirect": {
