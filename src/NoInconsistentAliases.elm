@@ -42,7 +42,7 @@ config =
     Config.config
 
 
-{-| If a module is called, ensure that there are no missing aliases.
+{-| Ensure that imports are aliased if a module is used to qualify a function or type, and has a known alias.
 
     NoInconsistentAliases.config
         [ ( "Html.Attributes", "Attr" )
@@ -51,20 +51,34 @@ config =
         |> NoInconsistentAliases.rule
 
 
-## Success
-
-    import Html.Attributes exposing (class)
-
-    view =
-        div [ class "flex" ] []
-
-
 ## Failure
+
+Here `Html.Attributes` has been used to call `class` and the preferred alias has not been used.
 
     import Html.Attributes
 
-    container children =
-        Html.div [ Html.Attributes.class "container" ] children
+    view children =
+        div [ Html.Attributes.class "container" ] children
+
+
+## Success
+
+Here `Html.Attributes` has been aliased to `Attr` as expected.
+
+    import Html.Attributes as Attr
+
+    view children =
+        div [ Attr.class "container" ] children
+
+
+## Success
+
+Here `class` has been exposed so the alias is not needed.
+
+    import Html.Attributes exposing (class)
+
+    view children =
+        div [ class "container" ] children
 
 -}
 noMissingAliases : Config -> Config
