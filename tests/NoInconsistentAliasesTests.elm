@@ -28,6 +28,7 @@ view = Html.div [ Html.Attributes.class "container" ] []
                         (Rule.config
                             [ ( "Html.Attributes", "Attr" )
                             ]
+                            |> Rule.noMissingAliases
                             |> rule
                         )
                     |> Review.Test.expectErrors
@@ -48,6 +49,22 @@ module Page exposing (view)
 import Html
 import Html.Attributes exposing (class)
 view = Html.div [ class "container" ] []
+"""
+                    |> Review.Test.run
+                        (Rule.config
+                            [ ( "Html.Attributes", "Attr" )
+                            ]
+                            |> Rule.noMissingAliases
+                            |> rule
+                        )
+                    |> Review.Test.expectNoErrors
+        , test "does not report missing aliases when the option is not set" <|
+            \_ ->
+                """
+module Page exposing (view)
+import Html
+import Html.Attributes
+view = Html.div [ Html.Attributes.class "container" ] []
 """
                     |> Review.Test.run
                         (Rule.config

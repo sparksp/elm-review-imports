@@ -4,10 +4,11 @@ import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
-import NoInconsistentAliases.Config as Config exposing (Config)
+import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
 import NoInconsistentAliases.MissingAlias as MissingAlias exposing (MissingAlias)
 import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
+import NoInconsistentAliases.Visitor.Options as Options exposing (Options)
 import Review.Fix as Fix exposing (Fix)
 import Review.Rule as Rule exposing (Error, Rule)
 import Vendor.NameVisitor as NameVisitor
@@ -16,18 +17,19 @@ import Vendor.NameVisitor as NameVisitor
 rule : Config -> Rule
 rule config =
     let
-        lookupAlias =
-            Config.lookupAlias config
+        options : Options
+        options =
+            Options.fromConfig config
     in
     Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
-        |> Rule.withImportVisitor (importVisitor lookupAlias)
+        |> Rule.withImportVisitor (importVisitor options)
         |> NameVisitor.withNameVisitor moduleCallVisitor
-        |> Rule.withFinalModuleEvaluation (finalEvaluation lookupAlias)
+        |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAlias)
         |> Rule.fromModuleRuleSchema
 
 
-importVisitor : AliasLookup -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
-importVisitor lookupAlias node context =
+importVisitor : Options -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
+importVisitor options node context =
     let
         moduleNameNode =
             node |> Node.value |> .moduleName
@@ -42,7 +44,7 @@ importVisitor lookupAlias node context =
     , context
         |> rememberModuleName moduleName
         |> rememberModuleAlias moduleName maybeModuleAlias
-        |> rememberBadAlias lookupAlias moduleNameNode maybeModuleAlias
+        |> rememberBadAlias options moduleNameNode maybeModuleAlias
     )
 
 
@@ -61,8 +63,8 @@ rememberModuleAlias moduleName maybeModuleAlias context =
             context
 
 
-rememberBadAlias : AliasLookup -> Node ModuleName -> Maybe (Node String) -> Context.Module -> Context.Module
-rememberBadAlias lookupAlias moduleNameNode maybeModuleAlias context =
+rememberBadAlias : Options -> Node ModuleName -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberBadAlias { lookupAlias, canMissAliases } moduleNameNode maybeModuleAlias context =
     let
         moduleName =
             Node.value moduleNameNode |> formatModuleName
@@ -80,13 +82,17 @@ rememberBadAlias lookupAlias moduleNameNode maybeModuleAlias context =
                 context
 
         ( Just expectedAlias, Nothing ) ->
-            let
-                missingAlias =
-                    MissingAlias.new (Node.value moduleNameNode) expectedAlias (Node.range moduleNameNode)
-            in
-            context |> Context.addMissingAlias missingAlias
+            if canMissAliases then
+                context
 
-        _ ->
+            else
+                let
+                    missingAlias =
+                        MissingAlias.new (Node.value moduleNameNode) expectedAlias (Node.range moduleNameNode)
+                in
+                context |> Context.addMissingAlias missingAlias
+
+        ( Nothing, _ ) ->
             context
 
 
@@ -97,7 +103,7 @@ moduleCallVisitor node context =
             ( [], Context.addModuleCall moduleName function (Node.range node) context )
 
 
-finalEvaluation : AliasLookup -> Context.Module -> List (Error {})
+finalEvaluation : Options.AliasLookup -> Context.Module -> List (Error {})
 finalEvaluation lookupAlias context =
     let
         lookupModuleName =
@@ -107,7 +113,7 @@ finalEvaluation lookupAlias context =
         ++ Context.foldMissingAliases foldMissingAliasError [] context
 
 
-foldBadAliasError : AliasLookup -> ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
+foldBadAliasError : Options.AliasLookup -> ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
 foldBadAliasError lookupAlias lookupModuleName badAlias errors =
     let
         moduleName =
@@ -239,10 +245,6 @@ formatModuleName moduleName =
 quote : String -> String
 quote string =
     "`" ++ string ++ "`"
-
-
-type alias AliasLookup =
-    String -> Maybe String
 
 
 type alias ModuleNameLookup =

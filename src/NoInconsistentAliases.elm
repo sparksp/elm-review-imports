@@ -1,8 +1,8 @@
-module NoInconsistentAliases exposing (rule, config)
+module NoInconsistentAliases exposing (rule, config, noMissingAliases)
 
 {-|
 
-@docs rule, config
+@docs rule, config, noMissingAliases
 
 -}
 
@@ -34,8 +34,39 @@ rule =
         , ( "Json.Decode", "Decode" )
         , ( "Json.Encode", "Encode" )
         ]
+        |> NoInconsistentAliases.rule
 
 -}
 config : List ( String, String ) -> Config
 config =
     Config.config
+
+
+{-| If a module is called, ensure that there are no missing aliases.
+
+    NoInconsistentAliases.config
+        [ ( "Html.Attributes", "Attr" )
+        ]
+        |> NoInconsistentAliases.noMissingAliases
+        |> NoInconsistentAliases.rule
+
+
+## Success
+
+    import Html.Attributes exposing (class)
+
+    view =
+        div [ class "flex" ] []
+
+
+## Failure
+
+    import Html.Attributes
+
+    container children =
+        Html.div [ Html.Attributes.class "container" ] children
+
+-}
+noMissingAliases : Config -> Config
+noMissingAliases =
+    Config.noMissingAliases
