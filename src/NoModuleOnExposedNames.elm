@@ -6,13 +6,14 @@ module NoModuleOnExposedNames exposing (rule)
 
 -}
 
-import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Import exposing (Import)
+import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Range exposing (Range)
 import NoModuleOnExposedNames.Context as Context
 import Review.Fix as Fix
 import Review.Rule as Rule exposing (Error, Rule)
+import Vendor.NameVisitor as NameVisitor
 
 
 {-| Forbid modules on names that have been exposed.
@@ -35,7 +36,7 @@ rule : Rule
 rule =
     Rule.newModuleRuleSchema "NoModuleOnExposedNames" Context.initial
         |> Rule.withImportVisitor importVisitor
-        |> Rule.withExpressionVisitor expressionVisitor
+        |> NameVisitor.withNameVisitor nameVisitor
         |> Rule.fromModuleRuleSchema
 
 
@@ -60,13 +61,10 @@ rememberExposedNames { moduleName, moduleAlias, exposingList } context =
             context |> Context.expose moduleNameOrAlias (Node.value exposes)
 
 
-expressionVisitor : Node Expression -> Rule.Direction -> Context.Module -> ( List (Error {}), Context.Module )
-expressionVisitor node direction context =
-    case ( direction, Node.value node ) of
-        ( Rule.OnEnter, Expression.FunctionOrValue [] name ) ->
-            ( [], context )
-
-        ( Rule.OnEnter, Expression.FunctionOrValue moduleName name ) ->
+nameVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )
+nameVisitor node context =
+    case Node.value node of
+        ( moduleName, name ) ->
             if Context.isExposedBy context moduleName name then
                 ( [ moduleOnExposedNameError name (Node.range node) ]
                 , context
@@ -74,12 +72,6 @@ expressionVisitor node direction context =
 
             else
                 ( [], context )
-
-        ( Rule.OnEnter, _ ) ->
-            ( [], context )
-
-        ( Rule.OnExit, _ ) ->
-            ( [], context )
 
 
 moduleOnExposedNameError : String -> Range -> Error {}
