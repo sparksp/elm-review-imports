@@ -3,6 +3,7 @@
         "Dict",
         "Tuple",
         "Tupled",
+        "concat",
         "foldl"
     ]
 }
