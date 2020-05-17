@@ -93,7 +93,10 @@ rule : Rule
 rule =
     Rule.newModuleRuleSchema "NoModuleOnExposedNames" Context.initial
         |> Rule.withImportVisitor importVisitor
-        |> NameVisitor.withNameVisitor nameVisitor
+        |> NameVisitor.withValueAndTypeVisitors
+            { valueVisitor = valueVisitor
+            , typeVisitor = typeVisitor
+            }
         |> Rule.fromModuleRuleSchema
 
 
@@ -118,12 +121,12 @@ rememberExposedNames { moduleName, moduleAlias, exposingList } context =
             context |> Context.expose moduleNameOrAlias (Node.value exposes)
 
 
-nameVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )
-nameVisitor node context =
+valueVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )
+valueVisitor node context =
     case Node.value node of
         ( moduleName, name ) ->
-            if Context.isExposedBy context moduleName name then
-                ( [ moduleOnExposedNameError name (Node.range node) ]
+            if Context.isFunctionExposed context moduleName name then
+                ( [ moduleOnExposedValueError name (Node.range node) ]
                 , context
                 )
 
@@ -131,10 +134,36 @@ nameVisitor node context =
                 ( [], context )
 
 
-moduleOnExposedNameError : String -> Range -> Error {}
-moduleOnExposedNameError name range =
+typeVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )
+typeVisitor node context =
+    case Node.value node of
+        ( moduleName, name ) ->
+            if Context.isTypeExposed context moduleName name then
+                ( [ moduleOnExposedTypeError name (Node.range node) ]
+                , context
+                )
+
+            else
+                ( [], context )
+
+
+moduleOnExposedValueError : String -> Range -> Error {}
+moduleOnExposedValueError name range =
     Rule.errorWithFix
-        { message = "Module used on exposed name `" ++ name ++ "`."
+        { message = "Module used on exposed value `" ++ name ++ "`."
+        , details =
+            [ "It is not necessary to use the module here as `" ++ name ++ "` was exposed on import."
+            , "You should remove the module from this call, or remove the name from the import .. exposing list."
+            ]
+        }
+        range
+        [ Fix.replaceRangeBy range name ]
+
+
+moduleOnExposedTypeError : String -> Range -> Error {}
+moduleOnExposedTypeError name range =
+    Rule.errorWithFix
+        { message = "Module used on exposed type `" ++ name ++ "`."
         , details =
             [ "It is not necessary to use the module here as `" ++ name ++ "` was exposed on import."
             , "You should remove the module from this call, or remove the name from the import .. exposing list."
