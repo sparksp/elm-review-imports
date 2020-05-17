@@ -23,13 +23,70 @@ import Vendor.NameVisitor as NameVisitor
         [ NoModuleOnExposedNames.rule
         ]
 
+If a function or type has been exposed on import do not allow it to be called via the module name/alias. You should either remove the call from the import exposes or remove the module name from the call.
+
 
 ## Failure
+
+Here `class` is exposed but is still called by `Attr.class`.
 
     import Html.Attributes as Attr exposing (class)
 
     view children =
         div [ Attr.class "container" ] children
+
+
+## Success
+
+Remove the module name from the call:
+
+    import Html.Attributes as Attr exposing (class)
+
+    view children =
+        div [ class "container" ] children
+
+
+## Success
+
+Or remove `class` from `exposing`:
+
+    import Html.Attributes as Attr
+
+    view children =
+        div [ Attr.class "container" ] children
+
+
+## Failure
+
+Here `Attribute` has been exposed but is still called by `Html.Attribute`.
+
+    import Html exposing (Attribute, Html)
+
+    container : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+    container attributes children =
+        div attributes children
+
+
+## Success
+
+Remove the module name from the call:
+
+    import Html exposing (Attribute, Html)
+
+    container : List (Attribute msg) -> List (Html msg) -> Html msg
+    container attributes children =
+        div attributes children
+
+
+## Success
+
+Or remove `Attribute` from `exposing`:
+
+    import Html exposing (Html)
+
+    container : List (Html.Attribute msg) -> List (Html msg) -> Html msg
+    container attributes children =
+        div attributes children
 
 -}
 rule : Rule
