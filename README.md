@@ -10,11 +10,13 @@ An [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-review/lat
 ## Provided Rule
 
 - [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/latest/NoUnusedPorts) - enforce consistent aliases.
+- [`NoModuleOnExposedNames`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/latest/NoModuleOnExposedNames) - forbid module on exposed names.
 
 ## Example Configuration
 
 ```elm
 import NoInconsistentAliases
+import NoModuleOnExposedNames
 import Review.Rule exposing (Rule)
 
 config : List Rule
@@ -26,5 +28,6 @@ config =
         ]
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule
+    , NoModuleOnExposedNames.rule
     ]
 ```
