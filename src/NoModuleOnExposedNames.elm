@@ -6,6 +6,7 @@ module NoModuleOnExposedNames exposing (rule)
 
 -}
 
+import Elm.DefaultImports as DefaultImports
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)
@@ -125,7 +126,12 @@ valueVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}
 valueVisitor node context =
     case Node.value node of
         ( moduleName, name ) ->
-            if Context.isFunctionExposed context moduleName name then
+            if DefaultImports.isValueExposed moduleName name then
+                ( [ moduleOnDefaultValueError name (Node.range node) ]
+                , context
+                )
+
+            else if Context.isFunctionExposed context moduleName name then
                 ( [ moduleOnExposedValueError name (Node.range node) ]
                 , context
                 )
@@ -138,7 +144,12 @@ typeVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {})
 typeVisitor node context =
     case Node.value node of
         ( moduleName, name ) ->
-            if Context.isTypeExposed context moduleName name then
+            if DefaultImports.isTypeExposed moduleName name then
+                ( [ moduleOnDefaultTypeError name (Node.range node) ]
+                , context
+                )
+
+            else if Context.isTypeExposed context moduleName name then
                 ( [ moduleOnExposedTypeError name (Node.range node) ]
                 , context
                 )
@@ -167,6 +178,32 @@ moduleOnExposedTypeError name range =
         , details =
             [ "It is not necessary to use the module here as `" ++ name ++ "` was exposed on import."
             , "You should remove the module from this call, or remove the name from the import .. exposing list."
+            ]
+        }
+        range
+        [ Fix.replaceRangeBy range name ]
+
+
+moduleOnDefaultValueError : String -> Range -> Error {}
+moduleOnDefaultValueError name range =
+    Rule.errorWithFix
+        { message = "Module used on exposed value `" ++ name ++ "`."
+        , details =
+            [ "It is not necessary to use the module here as Elm exposes `" ++ name ++ "` by default. You should remove the module from this call."
+            , "You can see the full list of default imports at: https://package.elm-lang.org/packages/elm/core/latest/#default-imports"
+            ]
+        }
+        range
+        [ Fix.replaceRangeBy range name ]
+
+
+moduleOnDefaultTypeError : String -> Range -> Error {}
+moduleOnDefaultTypeError name range =
+    Rule.errorWithFix
+        { message = "Module used on exposed type `" ++ name ++ "`."
+        , details =
+            [ "It is not necessary to use the module here as Elm exposes `" ++ name ++ "` by default. You should remove the module from this call."
+            , "You can see the full list of default imports at: https://package.elm-lang.org/packages/elm/core/latest/#default-imports"
             ]
         }
         range
