@@ -368,10 +368,10 @@ visitRecordField node =
 
 
 visitExpression : Node Expression -> List Name
-visitExpression node =
-    case Node.value node of
+visitExpression (Node range expression) =
+    case expression of
         Expression.FunctionOrValue moduleName function ->
-            visitValue (Node (Node.range node) ( moduleName, function ))
+            visitValue (Node range ( moduleName, function ))
 
         Expression.LetExpression { declarations } ->
             visitLetDeclarationList declarations
@@ -381,6 +381,9 @@ visitExpression node =
 
         Expression.LambdaExpression { args } ->
             visitPatternList args
+
+        Expression.RecordUpdateExpression name _ ->
+            visitValue (Node.map (\function -> ( [], function )) name)
 
         _ ->
             []
