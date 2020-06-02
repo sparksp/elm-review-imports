@@ -1,11 +1,11 @@
 module NoInconsistentAliases.Config exposing
-    ( Config, config, noMissingAliases
+    ( Config, config, detectAliases, noMissingAliases
     , canMissAliases, lookupAlias
     )
 
 {-|
 
-@docs Config, config, noMissingAliases
+@docs Config, config, detectAliases, noMissingAliases
 @docs canMissAliases, lookupAlias
 
 -}
@@ -18,6 +18,7 @@ type Config
     = Config
         { aliases : Dict ModuleName String
         , allowMissingAliases : Bool
+        , detectAliases : Bool
         }
 
 
@@ -29,7 +30,13 @@ config aliases =
                 |> List.map (Tuple.mapFirst toModuleName)
                 |> Dict.fromList
         , allowMissingAliases = True
+        , detectAliases = False
         }
+
+
+detectAliases : Config -> Config
+detectAliases (Config cfg) =
+    Config { cfg | detectAliases = True }
 
 
 noMissingAliases : Config -> Config

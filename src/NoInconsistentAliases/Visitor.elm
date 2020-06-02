@@ -1,8 +1,10 @@
 module NoInconsistentAliases.Visitor exposing (rule)
 
+import Dict exposing (Dict)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
+import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -21,11 +23,22 @@ rule config =
         options =
             Options.fromConfig config
     in
-    Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
+    Rule.newProjectRuleSchema "NoInconsistentAliases" Context.initial
+        |> Rule.withModuleVisitor (moduleVisitor options)
+        |> Context.withModuleContext
+        |> Rule.withFinalProjectEvaluation finalProjectEvaluation
+        |> Rule.fromProjectRuleSchema
+
+
+moduleVisitor :
+    Options
+    -> Rule.ModuleRuleSchema state Context.Module
+    -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } Context.Module
+moduleVisitor options schema =
+    schema
         |> Rule.withImportVisitor (importVisitor options)
         |> NameVisitor.withNameVisitor moduleCallVisitor
-        |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAlias)
-        |> Rule.fromModuleRuleSchema
+        |> Rule.withFinalModuleEvaluation (finalModuleEvaluation options.lookupAlias)
 
 
 importVisitor : Options -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
@@ -43,7 +56,7 @@ rememberModuleAlias moduleName maybeModuleAlias context =
         moduleAlias =
             maybeModuleAlias |> Maybe.withDefault moduleName |> Node.map formatModuleName
     in
-    context |> Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias)
+    context |> Context.addModuleAlias (Node.value moduleName) moduleAlias
 
 
 rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
@@ -87,8 +100,52 @@ moduleCallVisitor node context =
             ( [], Context.addModuleCall moduleName function (Node.range node) context )
 
 
-finalEvaluation : Options.AliasLookup -> Context.Module -> List (Error {})
-finalEvaluation lookupAlias context =
+finalProjectEvaluation : Context.Project -> List (Error scope)
+finalProjectEvaluation context =
+    context
+        |> Context.inconsistentModuleAliases
+        |> reportInconsistentModuleAliases
+
+
+reportInconsistentModuleAliases : Dict ModuleName (Dict String (List ( Rule.ModuleKey, Range ))) -> List (Error scope)
+reportInconsistentModuleAliases modules =
+    modules
+        |> Dict.toList
+        |> fastConcatMap inconsistentModuleImportErrors
+
+
+inconsistentModuleImportErrors : ( ModuleName, Dict String (List ( Rule.ModuleKey, Range )) ) -> List (Error scope)
+inconsistentModuleImportErrors ( moduleName, aliases ) =
+    let
+        knownAliases =
+            aliases |> Dict.keys
+    in
+    aliases
+        |> Dict.toList
+        |> fastConcatMap (inconsistentModuleAliasErrors moduleName knownAliases)
+
+
+inconsistentModuleAliasErrors : ModuleName -> List String -> ( String, List ( Rule.ModuleKey, Range ) ) -> List (Error scope)
+inconsistentModuleAliasErrors moduleName knownAliases ( badAlias, imports ) =
+    imports
+        |> List.map (inconsistentModuleAliasError moduleName knownAliases badAlias)
+
+
+inconsistentModuleAliasError : ModuleName -> List String -> String -> ( Rule.ModuleKey, Range ) -> Error scope
+inconsistentModuleAliasError moduleName aliases badAlias ( moduleKey, range ) =
+    Rule.errorForModule
+        moduleKey
+        { message = "Inconsistent alias `" ++ badAlias ++ "` for module `" ++ (moduleName |> formatModuleName) ++ "`."
+        , details =
+            [ "This module has been aliased differently across your project, you should pick one alias to be consistent everywhere.\n"
+                ++ (aliases |> List.map (\line -> " * " ++ line) |> String.join "\n")
+            ]
+        }
+        range
+
+
+finalModuleEvaluation : Options.AliasLookup -> Context.Module -> List (Error {})
+finalModuleEvaluation lookupAlias context =
     let
         lookupModuleName =
             Context.lookupModuleName context
@@ -231,3 +288,12 @@ formatModuleName moduleName =
 
 type alias ModuleNameLookup =
     String -> Maybe ModuleName
+
+
+
+--- List Performance
+
+
+fastConcatMap : (a -> List b) -> List a -> List b
+fastConcatMap fn =
+    List.foldr (fn >> (++)) []
