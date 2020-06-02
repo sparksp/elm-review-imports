@@ -2,6 +2,7 @@ module Tests.NoInconsistentAliases exposing (all)
 
 import NoInconsistentAliases as Rule exposing (rule)
 import Review.Test
+import Set exposing (Set)
 import Test exposing (Test, describe, test)
 
 
@@ -10,7 +11,54 @@ all =
     describe "NoInconsistentAliases"
         [ describe "preferred aliases" preferredAliasTests
         , describe "noMissingAliases" noMissingAliasesTests
+        , describe "detectAliases" detectAliasesTests
         ]
+
+
+detectAliasesTests : List Test
+detectAliasesTests =
+    [ test "does not report when module is only aliased in one module" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+view = ""
+"""
+                |> Review.Test.run
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
+    , test "reports when two modules alias the same module differently" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError (Set.fromList [ "A", "Attr" ]) "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError (Set.fromList [ "A", "Attr" ]) "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    ]
 
 
 noMissingAliasesTests : List Test
@@ -478,4 +526,16 @@ missingAliasError expectedAlias moduleName =
                 ++ "Remember to change all references to the alias in this module too."
             ]
         , under = moduleName
+        }
+
+
+inconsistentAliasError : Set String -> String -> String -> Review.Test.ExpectedError
+inconsistentAliasError knownAliases moduleName wrongAlias =
+    Review.Test.error
+        { message = "Inconsistent alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
+        , details =
+            [ "This module has been aliased differently across your project, you should pick one alias to be consistent everywhere.\n"
+                ++ (knownAliases |> Set.toList |> List.map (\line -> " * " ++ line) |> String.join "\n")
+            ]
+        , under = wrongAlias
         }

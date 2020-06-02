@@ -65,8 +65,8 @@ type Name
 -}
 withNameVisitor :
     (Node ( ModuleName, String ) -> context -> ( List (Error {}), context ))
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : () } context
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : (), hasAtLeastOneVisitor : () } context
+    -> Rule.ModuleRuleSchema state context
+    -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withNameVisitor nameVisitor rule =
     let
         visitor =
@@ -93,8 +93,8 @@ withNameVisitor nameVisitor rule =
 -}
 withValueVisitor :
     (Node ( ModuleName, String ) -> context -> ( List (Error {}), context ))
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : () } context
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : (), hasAtLeastOneVisitor : () } context
+    -> Rule.ModuleRuleSchema state context
+    -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withValueVisitor valueVisitor rule =
     let
         visitor =
@@ -121,8 +121,8 @@ withValueVisitor valueVisitor rule =
 -}
 withTypeVisitor :
     (Node ( ModuleName, String ) -> context -> ( List (Error {}), context ))
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : () } context
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : (), hasAtLeastOneVisitor : () } context
+    -> Rule.ModuleRuleSchema state context
+    -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withTypeVisitor typeVisitor rule =
     let
         visitor =
@@ -159,8 +159,8 @@ withValueAndTypeVisitors :
     { valueVisitor : Node ( ModuleName, String ) -> context -> ( List (Error {}), context )
     , typeVisitor : Node ( ModuleName, String ) -> context -> ( List (Error {}), context )
     }
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : () } context
-    -> Rule.ModuleRuleSchema { schemaState | canCollectProjectData : (), hasAtLeastOneVisitor : () } context
+    -> Rule.ModuleRuleSchema state context
+    -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withValueAndTypeVisitors { valueVisitor, typeVisitor } rule =
     let
         visitor =
