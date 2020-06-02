@@ -4,7 +4,7 @@ module NoInconsistentAliases.Context exposing
     , addMissingAlias, foldMissingAliases
     , addBadAlias, foldBadAliases
     , addModuleCall
-    , inconsistentModuleAliases
+    , importedAliasesByModule
     )
 
 {-|
@@ -55,8 +55,8 @@ initial =
         }
 
 
-inconsistentModuleAliases : Project -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
-inconsistentModuleAliases (Project { importedModules }) =
+importedAliasesByModule : Project -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
+importedAliasesByModule (Project { importedModules }) =
     importedModules
         |> Dict.filter (\_ dict -> Dict.size dict > 1)
 

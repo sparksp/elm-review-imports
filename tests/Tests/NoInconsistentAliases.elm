@@ -57,6 +57,42 @@ view = ""
                         ]
                       )
                     ]
+    , test "reports only the least popular inconsistent aliases" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""", """
+module Page.Legal exposing (view)
+import Html.Attributes as Attributes
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    , ( "Page.Legal"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "Attributes"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 37 } }
+                        ]
+                      )
+                    ]
     , test "reports non-preferred alias only when preferred alias is known" <|
         \() ->
             [ """
@@ -561,8 +597,9 @@ inconsistentAliasError knownAliases moduleName wrongAlias =
     Review.Test.error
         { message = "Inconsistent alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
         , details =
-            [ "This module has been aliased differently across your project, you should pick one alias to be consistent everywhere.\n"
-                ++ (knownAliases |> List.map (\line -> " * " ++ line) |> String.join "\n")
+            [ "I found the following aliases for `" ++ moduleName ++ "` across your project:"
+            , knownAliases |> List.map (\line -> "-> " ++ line) |> String.join "\n"
+            , "You should pick one alias to be consistent everywhere. If you configure this rule with your chosen alias then I can attempt to fix this everywhere."
             ]
         , under = wrongAlias
         }
