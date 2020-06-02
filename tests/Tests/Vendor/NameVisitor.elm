@@ -1,4 +1,4 @@
-module Vendor.NameVisitorTests exposing (all)
+module Tests.Vendor.NameVisitor exposing (all)
 
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node)

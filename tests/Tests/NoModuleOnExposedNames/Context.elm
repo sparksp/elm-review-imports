@@ -1,4 +1,4 @@
-module NoModuleOnExposedNames.ContextTests exposing (all)
+module Tests.NoModuleOnExposedNames.Context exposing (all)
 
 import Elm.Syntax.Exposing as Exposing
 import Elm.Syntax.Node exposing (Node(..))
