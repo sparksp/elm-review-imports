@@ -1,8 +1,8 @@
-module NoInconsistentAliases exposing (rule, config, noMissingAliases)
+module NoInconsistentAliases exposing (rule, config, detectAliases, noMissingAliases)
 
 {-|
 
-@docs rule, config, noMissingAliases
+@docs rule, config, detectAliases, noMissingAliases
 
 -}
 
@@ -40,6 +40,13 @@ rule =
 config : List ( String, String ) -> Config
 config =
     Config.config
+
+
+{-| TODO: Document this function
+-}
+detectAliases : Config -> Config
+detectAliases =
+    Config.detectAliases
 
 
 {-| Ensure that imports are aliased if a module is used to qualify a function or type, and has a known alias.
