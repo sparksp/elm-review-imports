@@ -5,7 +5,7 @@ on:
     branches: [master]
 
 jobs:
-  elm-test:
+  test:
     runs-on: ubuntu-latest
 
     strategy:
@@ -45,29 +45,7 @@ jobs:
       - name: Run elm-test
         run: elm-test
 
-  elm-format:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-      - uses: actions/cache@v1
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
-      - name: Run elm-format
-        uses: sparksp/elm-format-action@v1
-
-  elm-review:
+  lint:
     runs-on: ubuntu-latest
 
     steps:
@@ -92,29 +70,13 @@ jobs:
       - name: Add yarn bin to path
         run: echo ::add-path::$(yarn bin)
       - name: Run elm-review
-        run: elm-review
+        uses: sparksp/elm-review-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run elm-format
+        uses: sparksp/elm-format-action@v1
 
-  elm-analyse:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v1
-        id: npm-cache
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - uses: actions/cache@v1
-        id: elm-cache
-        with:
-          path: ~/.elm
-          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
-      - name: Run elm-analyse
-        uses: harehare/elm-analyse-action@v1
-
-  elm-build-docs:
+  docs:
     runs-on: ubuntu-latest
 
     steps:
@@ -141,8 +103,8 @@ jobs:
       - name: Build elm docs
         run: elm make --docs docs.json
 
-  elm-publish:
-    needs: [elm-test, elm-format, elm-review, elm-analyse, elm-build-docs]
+  publish:
+    needs: [test, lint, docs]
     runs-on: ubuntu-latest
 
     steps:
