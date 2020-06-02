@@ -96,7 +96,7 @@ fromProjectToModule _ _ _ =
 
 
 fromModuleToProject : Rule.ModuleKey -> Node ModuleName -> Module -> Project
-fromModuleToProject moduleKey moduleName (Module { aliases }) =
+fromModuleToProject moduleKey _ (Module { aliases }) =
     Project
         { importedModules = aliases |> fromModuleAliasesToProjectImportedModules moduleKey
         }

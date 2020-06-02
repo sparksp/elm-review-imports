@@ -2,7 +2,6 @@ module Tests.NoInconsistentAliases exposing (all)
 
 import NoInconsistentAliases as Rule exposing (rule)
 import Review.Test
-import Set exposing (Set)
 import Test exposing (Test, describe, test)
 
 
@@ -48,13 +47,44 @@ view = ""
                     )
                 |> Review.Test.expectErrorsForModules
                     [ ( "Page.About"
-                      , [ inconsistentAliasError (Set.fromList [ "A", "Attr" ]) "Html.Attributes" "Attr"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
                             |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
                         ]
                       )
                     , ( "Page.Home"
-                      , [ inconsistentAliasError (Set.fromList [ "A", "Attr" ]) "Html.Attributes" "A"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
                             |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "reports non-preferred alias only when preferred alias is known" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                            |> Review.Test.whenFixed
+                                """
+module Page.Home exposing (view)
+import Html.Attributes as Attr
+view = ""
+"""
                         ]
                       )
                     ]
@@ -526,13 +556,13 @@ missingAliasError expectedAlias moduleName =
         }
 
 
-inconsistentAliasError : Set String -> String -> String -> Review.Test.ExpectedError
+inconsistentAliasError : List String -> String -> String -> Review.Test.ExpectedError
 inconsistentAliasError knownAliases moduleName wrongAlias =
     Review.Test.error
         { message = "Inconsistent alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
         , details =
             [ "This module has been aliased differently across your project, you should pick one alias to be consistent everywhere.\n"
-                ++ (knownAliases |> Set.toList |> List.map (\line -> " * " ++ line) |> String.join "\n")
+                ++ (knownAliases |> List.map (\line -> " * " ++ line) |> String.join "\n")
             ]
         , under = wrongAlias
         }
