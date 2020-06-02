@@ -26,7 +26,7 @@ rule config =
     Rule.newProjectRuleSchema "NoInconsistentAliases" Context.initial
         |> Rule.withModuleVisitor (moduleVisitor options)
         |> Context.withModuleContext
-        |> Rule.withFinalProjectEvaluation finalProjectEvaluation
+        |> Rule.withFinalProjectEvaluation (finalProjectEvaluation options.lookupAlias)
         |> Rule.fromProjectRuleSchema
 
 
@@ -110,10 +110,11 @@ moduleCallVisitor node context =
             ( [], Context.addModuleCall moduleName function (Node.range node) context )
 
 
-finalProjectEvaluation : Context.Project -> List (Error scope)
-finalProjectEvaluation context =
+finalProjectEvaluation : Options.AliasLookup -> Context.Project -> List (Error scope)
+finalProjectEvaluation lookupAlias context =
     context
         |> Context.inconsistentModuleAliases
+        |> Dict.filter (\moduleName _ -> lookupAlias moduleName == Nothing)
         |> reportInconsistentModuleAliases
 
 
