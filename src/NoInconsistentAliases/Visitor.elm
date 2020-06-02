@@ -112,44 +112,79 @@ moduleCallVisitor node context =
 
 finalProjectEvaluation : Options.AliasLookup -> Context.Project -> List (Error scope)
 finalProjectEvaluation lookupAlias context =
-    context
-        |> Context.inconsistentModuleAliases
-        |> Dict.filter (\moduleName _ -> lookupAlias moduleName == Nothing)
-        |> reportInconsistentModuleAliases
-
-
-reportInconsistentModuleAliases : Dict String (Dict String (List ( Rule.ModuleKey, Range ))) -> List (Error scope)
-reportInconsistentModuleAliases modules =
-    modules
+    Context.importedAliasesByModule context
         |> Dict.toList
-        |> List.concatMap inconsistentModuleImportErrors
+        |> List.filter (\( moduleName, _ ) -> lookupAlias moduleName == Nothing)
+        |> List.concatMap inconsistentAliasErrors
 
 
-inconsistentModuleImportErrors : ( String, Dict String (List ( Rule.ModuleKey, Range )) ) -> List (Error scope)
-inconsistentModuleImportErrors ( moduleName, aliases ) =
+inconsistentAliasErrors : ( String, Dict String (List ( Rule.ModuleKey, Range )) ) -> List (Error scope)
+inconsistentAliasErrors ( moduleName, aliases ) =
     let
-        knownAliases =
-            aliases |> Dict.keys
+        aliasFrequency : List ( Int, String )
+        aliasFrequency =
+            aliases
+                |> Dict.toList
+                |> List.map (\( aliasName, uses ) -> ( List.length uses, aliasName ))
+                |> List.sortWith descending
+
+        maybeBestAliasName : Maybe String
+        maybeBestAliasName =
+            case aliasFrequency of
+                ( first, aliasName ) :: ( second, _ ) :: _ ->
+                    if first == second then
+                        Nothing
+
+                    else
+                        Just aliasName
+
+                _ ->
+                    Nothing
     in
-    aliases
-        |> Dict.toList
-        |> List.concatMap (inconsistentModuleAliasErrors moduleName knownAliases)
+    case maybeBestAliasName of
+        Just bestAliasName ->
+            aliases
+                |> Dict.toList
+                |> List.filter (\( aliasName, _ ) -> aliasName /= bestAliasName)
+                |> List.concatMap (inconsistentImportAliasErrors (incorrectAliasError bestAliasName moduleName))
+
+        Nothing ->
+            let
+                knownAliasNames : List String
+                knownAliasNames =
+                    Dict.keys aliases
+            in
+            aliases
+                |> Dict.toList
+                |> List.concatMap (inconsistentImportAliasErrors (inconsistentAliasError knownAliasNames moduleName))
 
 
-inconsistentModuleAliasErrors : String -> List String -> ( String, List ( Rule.ModuleKey, Range ) ) -> List (Error scope)
-inconsistentModuleAliasErrors moduleName knownAliases ( badAlias, imports ) =
+inconsistentImportAliasErrors :
+    (String -> ( Rule.ModuleKey, Range ) -> Error scope)
+    -> ( String, List ( Rule.ModuleKey, Range ) )
+    -> List (Error scope)
+inconsistentImportAliasErrors makeError ( badAlias, imports ) =
     imports
-        |> List.map (inconsistentModuleAliasError moduleName knownAliases badAlias)
+        |> List.map (makeError badAlias)
 
 
-inconsistentModuleAliasError : String -> List String -> String -> ( Rule.ModuleKey, Range ) -> Error scope
-inconsistentModuleAliasError moduleName aliases badAlias ( moduleKey, range ) =
+incorrectAliasError : String -> String -> String -> ( Rule.ModuleKey, Range ) -> Error scope
+incorrectAliasError expectedAlias moduleName badAlias ( moduleKey, range ) =
     Rule.errorForModule
         moduleKey
-        { message = "Inconsistent alias `" ++ badAlias ++ "` for module `" ++ moduleName ++ "`."
+        (incorrectAliasMessage expectedAlias moduleName badAlias)
+        range
+
+
+inconsistentAliasError : List String -> String -> String -> ( Rule.ModuleKey, Range ) -> Error scope
+inconsistentAliasError knownAliasNames moduleName badAlias ( moduleKey, range ) =
+    Rule.errorForModule
+        moduleKey
+        { message = "Inconsistent alias " ++ quote badAlias ++ " for module " ++ quote moduleName ++ "."
         , details =
-            [ "This module has been aliased differently across your project, you should pick one alias to be consistent everywhere.\n"
-                ++ (aliases |> List.map (\line -> " * " ++ line) |> String.join "\n")
+            [ "I found the following aliases for `" ++ moduleName ++ "` across your project:"
+            , knownAliasNames |> List.map (\line -> "-> " ++ line) |> String.join "\n"
+            , "You should pick one alias to be consistent everywhere. If you configure this rule with your chosen alias then I can attempt to fix this everywhere."
             ]
         }
         range
@@ -197,7 +232,7 @@ foldBadAliasError lookupAlias lookupModuleName badAlias errors =
                     Fix.replaceRangeBy badRange expectedAlias
                         :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
             in
-            Rule.errorWithFix (incorrectAliasMessage expectedAlias badAlias) badRange fixes
+            Rule.errorWithFix (badAliasMessage expectedAlias badAlias) badRange fixes
                 :: errors
 
 
@@ -235,16 +270,17 @@ detectCollision maybeCollisionName moduleName =
             )
 
 
-incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
-incorrectAliasMessage expectedAlias badAlias =
-    let
-        moduleName =
-            BadAlias.mapModuleName quote badAlias
-    in
+badAliasMessage : String -> BadAlias -> { message : String, details : List String }
+badAliasMessage expectedAlias badAlias =
+    incorrectAliasMessage expectedAlias (BadAlias.mapModuleName identity badAlias) (BadAlias.mapName identity badAlias)
+
+
+incorrectAliasMessage : String -> String -> String -> { message : String, details : List String }
+incorrectAliasMessage expectedAlias moduleName badAlias =
     { message =
-        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName ++ "."
+        "Incorrect alias " ++ quote badAlias ++ " for module " ++ quote moduleName ++ "."
     , details =
-        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
+        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ quote moduleName ++ "."
         , "You should update the alias to be consistent with the rest of the project. "
             ++ "Remember to change all references to the alias in this module too."
         ]
@@ -292,6 +328,19 @@ fixModuleUse expectedAlias use =
 formatModuleName : ModuleName -> String
 formatModuleName moduleName =
     String.join "." moduleName
+
+
+descending : comparable -> comparable -> Order
+descending a b =
+    case compare a b of
+        LT ->
+            GT
+
+        EQ ->
+            EQ
+
+        GT ->
+            LT
 
 
 quote : String -> String
