@@ -4,7 +4,7 @@ module NoInconsistentAliases.Context exposing
     , addMissingAlias, foldMissingAliases
     , addBadAlias, foldBadAliases
     , addModuleCall
-    , importedAliasesByModule
+    , importedAliasesByModule, isPreferredAliasUsed
     )
 
 {-|
@@ -27,6 +27,7 @@ import NoInconsistentAliases.BadAliasSet as BadAliasSet exposing (BadAliasSet)
 import NoInconsistentAliases.MissingAlias exposing (MissingAlias)
 import NoInconsistentAliases.MissingAliasSet as MissingAliasSet exposing (MissingAliasSet)
 import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
+import NoInconsistentAliases.Visitor.Options as Options exposing (Options)
 import Review.Rule as Rule
 
 
@@ -37,6 +38,7 @@ type alias AliasName =
 type Project
     = Project
         { importedModules : Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
+        , preferredAliasesUsed : Dict AliasName (List ( Rule.ModuleKey, ModuleName ))
         }
 
 
@@ -52,6 +54,7 @@ initial : Project
 initial =
     Project
         { importedModules = Dict.empty
+        , preferredAliasesUsed = Dict.empty
         }
 
 
@@ -62,13 +65,15 @@ importedAliasesByModule (Project { importedModules }) =
 
 
 withModuleContext :
-    Rule.ProjectRuleSchema
-        { schemaState
-            | canAddModuleVisitor : ()
-            , withModuleContext : Rule.Required
-        }
-        Project
-        Module
+    Options
+    ->
+        Rule.ProjectRuleSchema
+            { schemaState
+                | canAddModuleVisitor : ()
+                , withModuleContext : Rule.Required
+            }
+            Project
+            Module
     ->
         Rule.ProjectRuleSchema
             { schemaState
@@ -77,11 +82,11 @@ withModuleContext :
             }
             Project
             Module
-withModuleContext schema =
+withModuleContext { lookupAlias } schema =
     schema
         |> Rule.withModuleContext
             { fromProjectToModule = fromProjectToModule
-            , fromModuleToProject = fromModuleToProject
+            , fromModuleToProject = fromModuleToProject lookupAlias
             , foldProjectContexts = foldProjectContexts
             }
 
@@ -95,10 +100,11 @@ fromProjectToModule _ _ _ =
         }
 
 
-fromModuleToProject : Rule.ModuleKey -> Node ModuleName -> Module -> Project
-fromModuleToProject moduleKey _ (Module { aliases }) =
+fromModuleToProject : Options.AliasLookup -> Rule.ModuleKey -> Node ModuleName -> Module -> Project
+fromModuleToProject lookupAlias moduleKey _ (Module { aliases }) =
     Project
         { importedModules = aliases |> fromModuleAliasesToProjectImportedModules moduleKey
+        , preferredAliasesUsed = fromModuleAliasesToProjectPreferredAliasesUsed lookupAlias moduleKey aliases
         }
 
 
@@ -108,6 +114,17 @@ fromModuleAliasesToProjectImportedModules :
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
 fromModuleAliasesToProjectImportedModules moduleKey aliases =
     Dict.foldl (foldModuleAliasToProjectImportedModules moduleKey) Dict.empty aliases
+
+
+fromModuleAliasesToProjectPreferredAliasesUsed :
+    Options.AliasLookup
+    -> Rule.ModuleKey
+    -> Dict AliasName ( ModuleName, Range )
+    -> Dict AliasName (List ( Rule.ModuleKey, ModuleName ))
+fromModuleAliasesToProjectPreferredAliasesUsed lookupAlias moduleKey aliases =
+    aliases
+        |> Dict.filter (\key ( aliasName, _ ) -> lookupAlias aliasName == Just key)
+        |> Dict.map (\_ ( moduleName, _ ) -> [ ( moduleKey, moduleName ) ])
 
 
 foldModuleAliasToProjectImportedModules :
@@ -128,6 +145,7 @@ foldProjectContexts : Project -> Project -> Project
 foldProjectContexts (Project a) (Project b) =
     Project
         { importedModules = Dict.merge Dict.insert mergeImportedModules Dict.insert a.importedModules b.importedModules Dict.empty
+        , preferredAliasesUsed = Dict.foldr Dict.insert a.preferredAliasesUsed b.preferredAliasesUsed
         }
 
 
@@ -220,3 +238,24 @@ lookupModuleName (Module { aliases }) moduleAlias =
 foldMissingAliases : (MissingAlias -> a -> a) -> a -> Module -> a
 foldMissingAliases folder start (Module { missingAliases }) =
     MissingAliasSet.fold folder start missingAliases
+
+
+isPreferredAliasUsed : AliasName -> Project -> ( Rule.ModuleKey, Range ) -> Bool
+isPreferredAliasUsed aliasName (Project { preferredAliasesUsed }) ( key, _ ) =
+    Dict.get aliasName preferredAliasesUsed
+        |> Maybe.withDefault []
+        |> hasKey key
+
+
+hasKey : Rule.ModuleKey -> List ( Rule.ModuleKey, ModuleName ) -> Bool
+hasKey key locations =
+    List.foldr (hasKeyHelper key) False locations
+
+
+hasKeyHelper : Rule.ModuleKey -> ( Rule.ModuleKey, ModuleName ) -> Bool -> Bool
+hasKeyHelper search ( value, _ ) acc =
+    if value == search then
+        True
+
+    else
+        acc

@@ -25,8 +25,8 @@ rule config =
     in
     Rule.newProjectRuleSchema "NoInconsistentAliases" Context.initial
         |> Rule.withModuleVisitor (moduleVisitor options)
-        |> Context.withModuleContext
-        |> Rule.withFinalProjectEvaluation (finalProjectEvaluation options.lookupAlias)
+        |> Context.withModuleContext options
+        |> Rule.withFinalProjectEvaluation finalProjectEvaluation
         |> Rule.fromProjectRuleSchema
 
 
@@ -100,16 +100,18 @@ moduleCallVisitor node context =
             ( [], Context.addModuleCall moduleName function (Node.range node) context )
 
 
-finalProjectEvaluation : Options.AliasLookup -> Context.Project -> List (Error scope)
-finalProjectEvaluation lookupAlias context =
+finalProjectEvaluation : Context.Project -> List (Error scope)
+finalProjectEvaluation context =
     Context.importedAliasesByModule context
         |> Dict.toList
-        |> List.filter (\( moduleName, _ ) -> lookupAlias moduleName == Nothing)
-        |> fastConcatMap inconsistentAliasErrors
+        |> fastConcatMap (inconsistentAliasErrors context)
 
 
-inconsistentAliasErrors : ( ModuleName, Dict String (List ( Rule.ModuleKey, Range )) ) -> List (Error scope)
-inconsistentAliasErrors ( moduleName, aliases ) =
+inconsistentAliasErrors :
+    Context.Project
+    -> ( ModuleName, Dict String (List ( Rule.ModuleKey, Range )) )
+    -> List (Error scope)
+inconsistentAliasErrors context ( moduleName, aliases ) =
     let
         aliasFrequency : List ( Int, String )
         aliasFrequency =
@@ -130,23 +132,65 @@ inconsistentAliasErrors ( moduleName, aliases ) =
 
                 _ ->
                     Nothing
+
+        aliasesToReport : Dict String (List ( Rule.ModuleKey, Range ))
+        aliasesToReport =
+            aliases
+                |> removeCollisionsWithPreferredAliases context
+                |> removeCollisionsWithBestAliasName context maybeBestAliasName
     in
+    if Dict.size aliasesToReport > 1 then
+        case maybeBestAliasName of
+            Just bestAliasName ->
+                aliasesToReport
+                    |> Dict.toList
+                    |> List.filter (\( aliasName, _ ) -> aliasName /= bestAliasName)
+                    |> fastConcatMap (inconsistentImportAliasErrors (incorrectAliasError bestAliasName moduleName))
+
+            Nothing ->
+                let
+                    knownAliasNames : List String
+                    knownAliasNames =
+                        Dict.keys aliasesToReport
+                in
+                aliasesToReport
+                    |> Dict.toList
+                    |> fastConcatMap (inconsistentImportAliasErrors (inconsistentAliasError knownAliasNames moduleName))
+
+    else
+        []
+
+
+removeCollisionsWithPreferredAliases :
+    Context.Project
+    -> Dict String (List ( Rule.ModuleKey, Range ))
+    -> Dict String (List ( Rule.ModuleKey, Range ))
+removeCollisionsWithPreferredAliases context aliases =
+    Dict.filter (preferredAliasFilter context) aliases
+
+
+preferredAliasFilter : Context.Project -> String -> List ( Rule.ModuleKey, Range ) -> Bool
+preferredAliasFilter context aliasName list =
+    List.any (not << Context.isPreferredAliasUsed aliasName context) list
+
+
+removeCollisionsWithBestAliasName :
+    Context.Project
+    -> Maybe String
+    -> Dict String (List ( Rule.ModuleKey, Range ))
+    -> Dict String (List ( Rule.ModuleKey, Range ))
+removeCollisionsWithBestAliasName context maybeBestAliasName aliases =
     case maybeBestAliasName of
         Just bestAliasName ->
-            aliases
-                |> Dict.toList
-                |> List.filter (\( aliasName, _ ) -> aliasName /= bestAliasName)
-                |> fastConcatMap (inconsistentImportAliasErrors (incorrectAliasError bestAliasName moduleName))
+            Dict.filter (aliasNameFilter bestAliasName context) aliases
 
         Nothing ->
-            let
-                knownAliasNames : List String
-                knownAliasNames =
-                    Dict.keys aliases
-            in
             aliases
-                |> Dict.toList
-                |> fastConcatMap (inconsistentImportAliasErrors (inconsistentAliasError knownAliasNames moduleName))
+
+
+aliasNameFilter : String -> Context.Project -> String -> List ( Rule.ModuleKey, Range ) -> Bool
+aliasNameFilter aliasName context _ list =
+    List.any (not << Context.isPreferredAliasUsed aliasName context) list
 
 
 inconsistentImportAliasErrors :
