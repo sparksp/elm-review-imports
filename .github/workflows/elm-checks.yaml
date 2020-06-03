@@ -105,6 +105,7 @@ jobs:
       - name: Build elm docs
         run: elm make --docs docs.json
       - name: Checkout new docs branch
+        if: ${{ github.event_name == 'pull_request' }}
         run: git checkout -b docs/${{ github.head_ref }}
       - uses: stefanzweifel/git-auto-commit-action@v4
         if: ${{ github.event_name == 'pull_request' }}
@@ -113,20 +114,20 @@ jobs:
           branch: docs/${{ github.head_ref }}
           file_pattern: docs.json
           commit_message: Update docs.json
-          push_options: --force --dry-run
+          push_options: --force
         env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      # - uses: repo-sync/pull-request@v2
-      #   if: ${{ steps.docs-commit.outputs.changes_detected == 'true' }}
-      #   with:
-      #     source_branch: docs/${{ github.head_ref }}
-      #     destination_branch: ${{ github.head_ref }}
-      #     pr_title: "Update docs.json"
-      #     pr_body: "*This is an automated pull request because we found that the docs were out of date.*"
-      #     pr_reviewer: sparksp
-      #     pr_assignee: sparksp
-      #   env:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: repo-sync/pull-request@v2
+        if: ${{ steps.docs-commit.outputs.changes_detected == 'true' }}
+        with:
+          source_branch: docs/${{ github.head_ref }}
+          destination_branch: ${{ github.head_ref }}
+          pr_title: "Update docs.json"
+          pr_body: "*This is an automated pull request because we found that the docs were out of date.*"
+          pr_reviewer: sparksp
+          pr_assignee: sparksp
+        env:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     needs: [test, lint, docs]
