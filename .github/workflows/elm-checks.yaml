@@ -81,6 +81,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
       - name: Get yarn cache directory
         id: yarn-cache-dir
         run: echo "::set-output name=path::$(yarn cache dir)"
@@ -102,6 +104,27 @@ jobs:
         run: echo ::add-path::$(yarn bin)
       - name: Build elm docs
         run: elm make --docs docs.json
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        if: ${{ github.event_name == 'pull_request' }}
+        id: docs-commit
+        with:
+          branch: ${{ github.head_ref }}-docs
+          file_pattern: docs.json
+          commit_message: Update docs.json
+          push_options: '--force'
+        env:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: repo-sync/pull-request@v2
+        if: ${{ steps.docs-commit.outputs.changes_detected == 'true' }}
+        with:
+          source_branch: ${{ github.head_ref }}-docs
+          target_branch: ${{ github.head_ref }}
+          pr_title: "Update docs.json"
+          pr_body: "*This is an automated pull request because we found that the docs were out of date.*"
+          pr_reviewer: sparksp
+          pr_assignee: sparksp
+        env:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
     needs: [test, lint, docs]
