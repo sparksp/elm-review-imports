@@ -110,7 +110,7 @@ jobs:
         with:
           file_pattern: docs.json
           commit_message: Update docs.json
-          push_options: ' "${{ github.head_ref }}:${{ github.head_ref }}-docs" --force'
+          push_options: ' HEAD:${{ github.head_ref }}-docs --force'
         env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: repo-sync/pull-request@v2
