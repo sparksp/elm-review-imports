@@ -126,7 +126,6 @@ jobs:
           pr_body: "*This is an automated pull request because we found that the docs were out of date.*"
           pr_reviewer: sparksp
           pr_assignee: sparksp
-        env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
