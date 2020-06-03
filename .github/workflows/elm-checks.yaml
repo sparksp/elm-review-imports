@@ -104,6 +104,8 @@ jobs:
         run: echo ::add-path::$(yarn bin)
       - name: Build elm docs
         run: elm make --docs docs.json
+      - name: Configure git push default
+        run: git config push.default nothing
       - uses: stefanzweifel/git-auto-commit-action@v4
         if: ${{ github.event_name == 'pull_request' }}
         id: docs-commit
