@@ -108,10 +108,9 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         id: docs-commit
         with:
-          branch: ${{ github.head_ref }}-docs
           file_pattern: docs.json
           commit_message: Update docs.json
-          push_options: '--force'
+          push_options: ' "HEAD:${{ github.head_ref }}-docs" --set-upstream --force'
         env:
           github_token: ${{ secrets.GITHUB_TOKEN }}
       - uses: repo-sync/pull-request@v2
