@@ -26,8 +26,13 @@ config =
         , ( "Json.Decode", "Decode" )
         , ( "Json.Encode", "Encode" )
         ]
+        |> NoInconsistentAliases.detectAliases
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule
     , NoModuleOnExposedNames.rule
     ]
 ```
+
+## Suggested Workflow
+
+We recommend that you do not configure too many preferred aliases and instead use `NoInconsistentAliases.detectAliases` on your project, this will do a good job of highlighting inconsistent aliases. You should configure the preferred aliases to quickly fix any errant aliases using `elm-review --fix-all` - it's up to you then if you commit these or remove them again after.
