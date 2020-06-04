@@ -84,3 +84,8 @@ Here `class` has been exposed so the alias is not needed.
 noMissingAliases : Config -> Config
 noMissingAliases =
     Config.noMissingAliases
+
+
+unused : () -> ()
+unused () =
+    ()
