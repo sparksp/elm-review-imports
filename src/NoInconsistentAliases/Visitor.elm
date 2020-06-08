@@ -115,7 +115,7 @@ finalProjectEvaluation lookupAlias context =
     Context.importedAliasesByModule context
         |> Dict.toList
         |> List.filter (\( moduleName, _ ) -> lookupAlias moduleName == Nothing)
-        |> List.concatMap inconsistentAliasErrors
+        |> fastConcatMap inconsistentAliasErrors
 
 
 inconsistentAliasErrors : ( String, Dict String (List ( Rule.ModuleKey, Range )) ) -> List (Error scope)
@@ -146,7 +146,7 @@ inconsistentAliasErrors ( moduleName, aliases ) =
             aliases
                 |> Dict.toList
                 |> List.filter (\( aliasName, _ ) -> aliasName /= bestAliasName)
-                |> List.concatMap (inconsistentImportAliasErrors (incorrectAliasError bestAliasName moduleName))
+                |> fastConcatMap (inconsistentImportAliasErrors (incorrectAliasError bestAliasName moduleName))
 
         Nothing ->
             let
@@ -156,7 +156,7 @@ inconsistentAliasErrors ( moduleName, aliases ) =
             in
             aliases
                 |> Dict.toList
-                |> List.concatMap (inconsistentImportAliasErrors (inconsistentAliasError knownAliasNames moduleName))
+                |> fastConcatMap (inconsistentImportAliasErrors (inconsistentAliasError knownAliasNames moduleName))
 
 
 inconsistentImportAliasErrors :
@@ -350,3 +350,12 @@ quote string =
 
 type alias ModuleNameLookup =
     String -> Maybe String
+
+
+
+--- List Performance
+
+
+fastConcatMap : (a -> List b) -> List a -> List b
+fastConcatMap fn =
+    List.foldr (fn >> (++)) []
