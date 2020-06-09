@@ -124,6 +124,117 @@ view = ""
                         ]
                       )
                     ]
+    , test "reports inconsistent alias despite collision with another alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "reports incorrect alias despite collision with another alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "does not report when there's a collision with a preferred alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
+    , test "reports inconsistent aliases when one alias is preferred by another module but not used" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
     ]
 
 
