@@ -1,6 +1,6 @@
 module NoInconsistentAliases.Context exposing
     ( Project, Module, initial, withModuleContext
-    , AliasName, ModuleName
+    , AliasName
     , addModuleAlias, lookupModuleName
     , addMissingAlias, foldMissingAliases
     , addBadAlias, foldBadAliases
@@ -21,7 +21,7 @@ module NoInconsistentAliases.Context exposing
 -}
 
 import Dict exposing (Dict)
-import Elm.Syntax.ModuleName as ModuleName
+import Elm.Syntax.ModuleName as ModuleName exposing (ModuleName)
 import Elm.Syntax.Node exposing (Node(..))
 import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.BadAlias exposing (BadAlias)
@@ -31,10 +31,6 @@ import NoInconsistentAliases.MissingAliasSet as MissingAliasSet exposing (Missin
 import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
 import NoInconsistentAliases.Visitor.Options as Options exposing (Options)
 import Review.Rule as Rule
-
-
-type alias ModuleName =
-    String
 
 
 type alias AliasName =
@@ -97,7 +93,7 @@ withModuleContext { lookupAlias } schema =
             }
 
 
-fromProjectToModule : Rule.ModuleKey -> Node ModuleName.ModuleName -> Project -> Module
+fromProjectToModule : Rule.ModuleKey -> Node ModuleName -> Project -> Module
 fromProjectToModule _ _ _ =
     Module
         { aliases = Dict.empty
@@ -106,7 +102,7 @@ fromProjectToModule _ _ _ =
         }
 
 
-fromModuleToProject : Options.AliasLookup -> Rule.ModuleKey -> Node ModuleName.ModuleName -> Module -> Project
+fromModuleToProject : Options.AliasLookup -> Rule.ModuleKey -> Node ModuleName -> Module -> Project
 fromModuleToProject lookupAlias moduleKey (Node _ moduleName) (Module { aliases }) =
     Project
         { importedModules = aliases |> fromModuleAliasesToProjectImportedModules moduleKey
@@ -140,7 +136,7 @@ foldModuleAliasToProjectImportedModules :
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
 foldModuleAliasToProjectImportedModules moduleKey aliasName ( moduleName, range ) importedModules =
-    if moduleName == aliasName then
+    if moduleName == toModuleName aliasName then
         importedModules
 
     else
@@ -198,7 +194,7 @@ addMissingAlias missingAlias (Module context) =
     Module { context | missingAliases = MissingAliasSet.insert missingAlias context.missingAliases }
 
 
-addModuleCall : ModuleName.ModuleName -> String -> Range -> Module -> Module
+addModuleCall : ModuleName -> String -> Range -> Module -> Module
 addModuleCall moduleName function range context =
     let
         moduleUse =
@@ -209,7 +205,7 @@ addModuleCall moduleName function range context =
         |> useMissingAliasCall moduleName moduleUse
 
 
-useBadAliasCall : ModuleName.ModuleName -> ModuleUse -> Module -> Module
+useBadAliasCall : ModuleName -> ModuleUse -> Module -> Module
 useBadAliasCall moduleName moduleUse (Module context) =
     case moduleName of
         [ moduleAlias ] ->
@@ -222,7 +218,7 @@ useBadAliasCall moduleName moduleUse (Module context) =
             Module context
 
 
-useMissingAliasCall : ModuleName.ModuleName -> ModuleUse -> Module -> Module
+useMissingAliasCall : ModuleName -> ModuleUse -> Module -> Module
 useMissingAliasCall moduleName moduleUse (Module context) =
     Module
         { context
@@ -235,7 +231,7 @@ foldBadAliases folder start (Module { badAliases }) =
     BadAliasSet.foldr folder start badAliases
 
 
-lookupModuleName : Module -> AliasName -> Maybe String
+lookupModuleName : Module -> AliasName -> Maybe ModuleName
 lookupModuleName (Module { aliases }) moduleAlias =
     Dict.get moduleAlias aliases
         |> Maybe.map Tuple.first
@@ -265,3 +261,8 @@ hasKeyHelper search ( value, key ) acc =
 
     else
         acc
+
+
+toModuleName : String -> ModuleName
+toModuleName =
+    String.split "."
