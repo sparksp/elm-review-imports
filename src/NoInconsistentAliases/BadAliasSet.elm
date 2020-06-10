@@ -1,4 +1,4 @@
-module NoInconsistentAliases.BadAliasSet exposing (BadAliasSet, empty, fold, insert, use)
+module NoInconsistentAliases.BadAliasSet exposing (BadAliasSet, empty, foldr, insert, use)
 
 import Dict exposing (Dict)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
@@ -33,6 +33,6 @@ use name moduleUse (BadAliasSet aliases) =
             BadAliasSet (Dict.insert name badAliasWithUse aliases)
 
 
-fold : (BadAlias -> a -> a) -> a -> BadAliasSet -> a
-fold folder start (BadAliasSet aliases) =
-    aliases |> Dict.values |> List.foldl folder start
+foldr : (BadAlias -> a -> a) -> a -> BadAliasSet -> a
+foldr folder start (BadAliasSet aliases) =
+    aliases |> Dict.values |> List.foldr folder start

@@ -4,6 +4,6 @@
         "Tuple",
         "Tupled",
         "concat",
-        "foldl"
+        "foldr"
     ]
 }

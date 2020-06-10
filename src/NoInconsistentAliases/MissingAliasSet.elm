@@ -1,4 +1,4 @@
-module NoInconsistentAliases.MissingAliasSet exposing (MissingAliasSet, empty, fold, insert, use)
+module NoInconsistentAliases.MissingAliasSet exposing (MissingAliasSet, empty, foldr, insert, use)
 
 import Dict exposing (Dict)
 import Elm.Syntax.ModuleName exposing (ModuleName)
@@ -34,6 +34,6 @@ use moduleName moduleUse (MissingAliasSet aliases) =
             MissingAliasSet (Dict.insert moduleName missingAliasWithUse aliases)
 
 
-fold : (MissingAlias -> a -> a) -> a -> MissingAliasSet -> a
-fold folder start (MissingAliasSet aliases) =
-    aliases |> Dict.values |> List.foldl folder start
+foldr : (MissingAlias -> a -> a) -> a -> MissingAliasSet -> a
+foldr folder start (MissingAliasSet aliases) =
+    aliases |> Dict.values |> List.foldr folder start

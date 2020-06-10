@@ -119,7 +119,7 @@ fromModuleAliasesToProjectImportedModules :
     -> Dict AliasName ( ModuleName, Range )
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
 fromModuleAliasesToProjectImportedModules moduleKey aliases =
-    Dict.foldl (foldModuleAliasToProjectImportedModules moduleKey) Dict.empty aliases
+    Dict.foldr (foldModuleAliasToProjectImportedModules moduleKey) Dict.empty aliases
 
 
 fromModuleAliasesToProjectPreferredAliasesUsed :
@@ -232,7 +232,7 @@ useMissingAliasCall moduleName moduleUse (Module context) =
 
 foldBadAliases : (BadAlias -> a -> a) -> a -> Module -> a
 foldBadAliases folder start (Module { badAliases }) =
-    BadAliasSet.fold folder start badAliases
+    BadAliasSet.foldr folder start badAliases
 
 
 lookupModuleName : Module -> AliasName -> Maybe String
@@ -243,7 +243,7 @@ lookupModuleName (Module { aliases }) moduleAlias =
 
 foldMissingAliases : (MissingAlias -> a -> a) -> a -> Module -> a
 foldMissingAliases folder start (Module { missingAliases }) =
-    MissingAliasSet.fold folder start missingAliases
+    MissingAliasSet.foldr folder start missingAliases
 
 
 isPreferredAliasUsed : AliasName -> Project -> ( Rule.ModuleKey, Range ) -> Bool
