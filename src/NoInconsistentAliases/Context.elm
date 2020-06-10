@@ -134,7 +134,7 @@ foldModuleAliasToProjectImportedModules :
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
     -> Dict ModuleName (Dict AliasName (List ( Rule.ModuleKey, Range )))
 foldModuleAliasToProjectImportedModules moduleKey aliasName ( moduleName, range ) importedModules =
-    if moduleName == [ aliasName ] then
+    if moduleName == toModuleName aliasName then
         importedModules
 
     else
@@ -259,3 +259,8 @@ hasKeyHelper search ( value, _ ) acc =
 
     else
         acc
+
+
+toModuleName : String -> ModuleName
+toModuleName =
+    String.split "."

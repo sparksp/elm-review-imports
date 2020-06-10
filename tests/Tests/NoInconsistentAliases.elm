@@ -93,6 +93,27 @@ view = ""
                         ]
                       )
                     ]
+    , test "does not report modules that are not aliased" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
     , test "reports non-preferred alias only when preferred alias is known" <|
         \() ->
             [ """
