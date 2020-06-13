@@ -20,6 +20,11 @@ This makes no attempt to resolve module names from imports, it just returns what
 
 [elm-review-scope]: http://github.com/jfmengels/elm-review-scope/
 
+
+## Version
+
+Version: 0.2.0
+
 -}
 
 import Elm.Syntax.Declaration as Declaration exposing (Declaration)
@@ -202,21 +207,24 @@ expressionVisitor visitor node direction context =
 
 folder :
     Visitor context
-    -> (context -> List Name -> ( List (Error {}), context ))
+    -> context
+    -> List Name
+    -> ( List (Error {}), context )
 folder visitor context list =
-    case list of
-        [] ->
-            ( [], context )
+    List.foldl (folderHelper visitor) ( [], context ) list
 
-        head :: rest ->
-            let
-                ( headErrors, headContext ) =
-                    applyVisitor visitor head context
 
-                ( restErrors, restContext ) =
-                    folder visitor headContext rest
-            in
-            ( headErrors ++ restErrors, restContext )
+folderHelper :
+    Visitor context
+    -> Name
+    -> ( List (Error {}), context )
+    -> ( List (Error {}), context )
+folderHelper visitor name ( errors, context ) =
+    let
+        ( newErrors, newContext ) =
+            applyVisitor visitor name context
+    in
+    ( newErrors ++ errors, newContext )
 
 
 applyVisitor : Visitor context -> Name -> context -> ( List (Error {}), context )
@@ -466,7 +474,7 @@ visitType node =
 
 
 
---- List Performance
+--- High Performance List
 
 
 fastConcatMap : (a -> List b) -> List a -> List b
