@@ -1,30 +1,27 @@
-module NoInconsistentAliases.BadAlias exposing (BadAlias, Name, mapExpectedName, mapModuleName, mapName, mapUses, new, range, withModuleUse)
+module NoInconsistentAliases.BadAlias exposing (BadAlias, mapExpectedName, mapModuleName, mapName, mapUses, new, range, withModuleUse)
 
+import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.ModuleUse exposing (ModuleUse)
 
 
 type BadAlias
     = BadAlias
-        { name : Name
-        , moduleName : String
+        { name : String
+        , moduleName : ModuleName
         , expectedName : String
         , at : Range
         , uses : List ModuleUse
         }
 
 
-type alias Name =
-    String
-
-
-new : Name -> String -> String -> Range -> BadAlias
-new newName newModuleName newExpectedName newRange =
+new : { name : String, moduleName : ModuleName, expectedName : String, range : Range } -> BadAlias
+new options =
     BadAlias
-        { name = newName
-        , moduleName = newModuleName
-        , expectedName = newExpectedName
-        , at = newRange
+        { name = options.name
+        , moduleName = options.moduleName
+        , expectedName = options.expectedName
+        , at = options.range
         , uses = []
         }
 
@@ -39,12 +36,12 @@ range (BadAlias alias) =
     alias.at
 
 
-mapName : (Name -> a) -> BadAlias -> a
+mapName : (String -> a) -> BadAlias -> a
 mapName mapper (BadAlias alias) =
     mapper alias.name
 
 
-mapModuleName : (String -> a) -> BadAlias -> a
+mapModuleName : (ModuleName -> a) -> BadAlias -> a
 mapModuleName mapper (BadAlias alias) =
     mapper alias.moduleName
 

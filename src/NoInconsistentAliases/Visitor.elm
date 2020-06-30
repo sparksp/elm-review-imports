@@ -2,7 +2,7 @@ module NoInconsistentAliases.Visitor exposing (rule)
 
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
-import Elm.Syntax.Node as Node exposing (Node)
+import Elm.Syntax.Node as Node exposing (Node(..))
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -64,17 +64,18 @@ rememberModuleAlias moduleName maybeModuleAlias context =
 
 
 rememberBadAlias : Options -> Node ModuleName -> Maybe (Node String) -> Context.Module -> Context.Module
-rememberBadAlias { lookupAlias, canMissAliases } moduleNameNode maybeModuleAlias context =
-    let
-        moduleName =
-            Node.value moduleNameNode |> formatModuleName
-    in
+rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
     case ( lookupAlias moduleName, maybeModuleAlias ) of
-        ( Just expectedAlias, Just moduleAlias ) ->
-            if expectedAlias /= (moduleAlias |> Node.value) then
+        ( Just expectedAlias, Just (Node moduleAliasRange moduleAlias) ) ->
+            if expectedAlias /= moduleAlias then
                 let
                     badAlias =
-                        BadAlias.new (Node.value moduleAlias) moduleName expectedAlias (Node.range moduleAlias)
+                        BadAlias.new
+                            { name = moduleAlias
+                            , moduleName = moduleName
+                            , expectedName = expectedAlias
+                            , range = moduleAliasRange
+                            }
                 in
                 context |> Context.addBadAlias badAlias
 
@@ -88,7 +89,7 @@ rememberBadAlias { lookupAlias, canMissAliases } moduleNameNode maybeModuleAlias
             else
                 let
                     missingAlias =
-                        MissingAlias.new (Node.value moduleNameNode) expectedAlias (Node.range moduleNameNode)
+                        MissingAlias.new moduleName expectedAlias moduleNameRange
                 in
                 context |> Context.addMissingAlias missingAlias
 
@@ -170,7 +171,7 @@ foldMissingAliasError missingAlias errors =
         errors
 
 
-detectCollision : Maybe String -> String -> Maybe String
+detectCollision : Maybe ModuleName -> ModuleName -> Maybe ModuleName
 detectCollision maybeCollisionName moduleName =
     maybeCollisionName
         |> Maybe.andThen
@@ -186,30 +187,36 @@ detectCollision maybeCollisionName moduleName =
 incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
 incorrectAliasMessage expectedAlias badAlias =
     let
+        badAliasName =
+            BadAlias.mapName identity badAlias
+
         moduleName =
-            BadAlias.mapModuleName quote badAlias
+            BadAlias.mapModuleName formatModuleName badAlias
     in
     { message =
-        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName ++ "."
+        "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
     , details =
-        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
+        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
         , "You should update the alias to be consistent with the rest of the project. "
             ++ "Remember to change all references to the alias in this module too."
         ]
     }
 
 
-collisionAliasMessage : String -> String -> BadAlias -> { message : String, details : List String }
+collisionAliasMessage : ModuleName -> String -> BadAlias -> { message : String, details : List String }
 collisionAliasMessage collisionName expectedAlias badAlias =
     let
+        badAliasName =
+            BadAlias.mapName identity badAlias
+
         moduleName =
-            BadAlias.mapModuleName quote badAlias
+            BadAlias.mapModuleName formatModuleName badAlias
     in
     { message =
-        "Incorrect alias " ++ BadAlias.mapName quote badAlias ++ " for module " ++ moduleName ++ "."
+        "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
     , details =
-        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
-        , "Your preferred alias has already been taken by " ++ quote collisionName ++ "."
+        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+        , "Your preferred alias has already been taken by `" ++ formatModuleName collisionName ++ "`."
         , "You should change the alias for both modules to be consistent with the rest of the project. "
             ++ "Remember to change all references to the alias in this module too."
         ]
@@ -220,12 +227,12 @@ missingAliasMessage : String -> MissingAlias -> { message : String, details : Li
 missingAliasMessage expectedAlias missingAlias =
     let
         moduleName =
-            MissingAlias.mapModuleName (formatModuleName >> quote) missingAlias
+            MissingAlias.mapModuleName formatModuleName missingAlias
     in
     { message =
-        "Expected alias " ++ quote expectedAlias ++ " missing for module " ++ moduleName ++ "."
+        "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
     , details =
-        [ "This import does not use your preferred alias " ++ quote expectedAlias ++ " for " ++ moduleName ++ "."
+        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
         , "You should update the alias to be consistent with the rest of the project. "
             ++ "Remember to change all references to the alias in this module too."
         ]
@@ -242,10 +249,5 @@ formatModuleName moduleName =
     String.join "." moduleName
 
 
-quote : String -> String
-quote string =
-    "`" ++ string ++ "`"
-
-
 type alias ModuleNameLookup =
-    String -> Maybe String
+    String -> Maybe ModuleName

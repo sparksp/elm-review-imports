@@ -42,9 +42,9 @@ canMissAliases (Config cfg) =
     cfg.allowMissingAliases
 
 
-lookupAlias : Config -> String -> Maybe String
+lookupAlias : Config -> ModuleName -> Maybe String
 lookupAlias (Config { aliases }) moduleName =
-    Dict.get (toModuleName moduleName) aliases
+    Dict.get moduleName aliases
 
 
 
