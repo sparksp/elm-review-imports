@@ -6,9 +6,10 @@
   "author": "Phill Sparks <me@phills.me.uk>",
   "license": "MIT",
   "scripts": {
+    "docs": "elm make --docs=docs.json",
     "lint:format": "elm-format --validate src tests",
     "lint:review": "elm-review",
-    "lint": "run-s lint:format lint:review ;",
+    "lint": "run-s lint:format lint:review docs ;",
     "test": "elm-test",
     "test:watch": "elm-test --watch"
   },
