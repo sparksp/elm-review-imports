@@ -20,7 +20,7 @@ import Review.Rule exposing (Rule)
     config : List Rule
     config =
         [ NoInconsistentAliases.config
-            [ ( "Html.Attributes", "Attr" )
+            [ ( "Html.Attributes", "Attr", [] )
             ]
             |> NoInconsistentAliases.rule
         ]
@@ -34,14 +34,14 @@ rule =
 {-| Provide a list of preferred names to be enforced. If we find any of the given modules imported with a different alias we will report them.
 
     NoInconsistentAliases.config
-        [ ( "Html.Attributes", "Attr" )
-        , ( "Json.Decode", "Decode" )
-        , ( "Json.Encode", "Encode" )
+        [ ( "Html.Attributes", "Attr", [] )
+        , ( "Json.Decode", "Decode", [] )
+        , ( "Json.Encode", "Encode", [] )
         ]
         |> NoInconsistentAliases.rule
 
 -}
-config : List ( String, String ) -> Config
+config : List ( String, String, List String ) -> Config
 config =
     Config.config
 
@@ -49,7 +49,7 @@ config =
 {-| Ensure that imports are aliased if a module is used to qualify a function or type, and has a known alias.
 
     NoInconsistentAliases.config
-        [ ( "Html.Attributes", "Attr" )
+        [ ( "Html.Attributes", "Attr", [] )
         ]
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule

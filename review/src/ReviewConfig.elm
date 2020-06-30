@@ -43,7 +43,7 @@ config =
         ]
     , NoImportingEverything.rule []
     , NoInconsistentAliases.config
-        [ ( "Review.Rule", "Rule" )
+        [ ( "Review.Rule", "Rule", [] )
         ]
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule

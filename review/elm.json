@@ -15,6 +15,7 @@
             "jfmengels/review-debug": "2.0.1",
             "jfmengels/review-documentation": "1.0.0",
             "jfmengels/review-unused": "2.1.2",
+            "mgold/elm-nonempty-list": "4.1.0",
             "sparksp/elm-review-always": "1.0.4",
             "sparksp/elm-review-camelcase": "1.1.0",
             "sparksp/elm-review-forbidden-words": "1.0.1",

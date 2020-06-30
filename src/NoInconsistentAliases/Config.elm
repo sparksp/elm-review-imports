@@ -1,32 +1,39 @@
 module NoInconsistentAliases.Config exposing
     ( Config, config, noMissingAliases
-    , canMissAliases, lookupAlias
+    , canMissAliases, lookupAliases
     )
 
 {-|
 
 @docs Config, config, noMissingAliases
-@docs canMissAliases, lookupAlias
+@docs canMissAliases, lookupAliases
 
 -}
 
 import Dict exposing (Dict)
 import Elm.Syntax.ModuleName exposing (ModuleName)
+import List.Nonempty as Nonempty exposing (Nonempty)
 
 
 type Config
     = Config
-        { aliases : Dict ModuleName String
+        { aliases : Dict ModuleName (Nonempty String)
         , allowMissingAliases : Bool
         }
 
 
-config : List ( String, String ) -> Config
+config : List ( String, String, List String ) -> Config
 config aliases =
     Config
         { aliases =
             aliases
-                |> List.map (Tuple.mapFirst toModuleName)
+                |> List.map
+                    (\( moduleName, primaryAlias, otherAliases ) ->
+                        ( toModuleName moduleName
+                        , Nonempty.fromElement primaryAlias
+                            |> Nonempty.replaceTail otherAliases
+                        )
+                    )
                 |> Dict.fromList
         , allowMissingAliases = True
         }
@@ -42,8 +49,8 @@ canMissAliases (Config cfg) =
     cfg.allowMissingAliases
 
 
-lookupAlias : Config -> ModuleName -> Maybe String
-lookupAlias (Config { aliases }) moduleName =
+lookupAliases : Config -> ModuleName -> Maybe (Nonempty String)
+lookupAliases (Config { aliases }) moduleName =
     Dict.get moduleName aliases
 
 

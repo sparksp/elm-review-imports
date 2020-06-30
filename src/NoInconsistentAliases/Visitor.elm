@@ -3,6 +3,7 @@ module NoInconsistentAliases.Visitor exposing (rule)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
+import List.Nonempty as Nonempty
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -24,7 +25,7 @@ rule config =
     Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
         |> Rule.withImportVisitor (importVisitor options)
         |> NameVisitor.withNameVisitor moduleCallVisitor
-        |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAlias)
+        |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAliases)
         |> Rule.fromModuleRuleSchema
 
 
@@ -47,10 +48,14 @@ rememberModuleAlias moduleName maybeModuleAlias context =
 
 
 rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
-rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
-    case ( lookupAlias moduleName, maybeModuleAlias ) of
-        ( Just expectedAlias, Just (Node moduleAliasRange moduleAlias) ) ->
-            if [ expectedAlias ] /= moduleAlias then
+rememberBadAlias { lookupAliases, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
+    case ( lookupAliases moduleName, maybeModuleAlias ) of
+        ( Just expectedAliases, Just (Node moduleAliasRange moduleAlias) ) ->
+            let
+                expectedAlias =
+                    Nonempty.head expectedAliases
+            in
+            if expectedAlias /= formatModuleName moduleAlias then
                 let
                     badAlias =
                         BadAlias.new
@@ -65,14 +70,14 @@ rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleNam
             else
                 context
 
-        ( Just expectedAlias, Nothing ) ->
+        ( Just expectedAliases, Nothing ) ->
             if canMissAliases then
                 context
 
             else
                 let
                     missingAlias =
-                        MissingAlias.new moduleName expectedAlias moduleNameRange
+                        MissingAlias.new moduleName (Nonempty.head expectedAliases) moduleNameRange
                 in
                 context |> Context.addMissingAlias missingAlias
 
