@@ -6,7 +6,7 @@ import NoInconsistentAliases.ModuleUse exposing (ModuleUse)
 
 
 type BadAliasSet
-    = BadAliasSet (Dict BadAlias.Name BadAlias)
+    = BadAliasSet (Dict String BadAlias)
 
 
 empty : BadAliasSet
@@ -19,7 +19,7 @@ insert badAlias (BadAliasSet aliases) =
     BadAliasSet (BadAlias.mapName (\name -> Dict.insert name badAlias aliases) badAlias)
 
 
-use : BadAlias.Name -> ModuleUse -> BadAliasSet -> BadAliasSet
+use : String -> ModuleUse -> BadAliasSet -> BadAliasSet
 use name moduleUse (BadAliasSet aliases) =
     case Dict.get name aliases of
         Nothing ->

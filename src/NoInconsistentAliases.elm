@@ -1,12 +1,16 @@
-module NoInconsistentAliases exposing (rule, config, noMissingAliases)
+module NoInconsistentAliases exposing
+    ( rule, config, noMissingAliases
+    , Config
+    )
 
 {-|
 
 @docs rule, config, noMissingAliases
+@docs Config
 
 -}
 
-import NoInconsistentAliases.Config as Config exposing (Config)
+import NoInconsistentAliases.Config as Config
 import NoInconsistentAliases.Visitor as Visitor
 import Review.Rule exposing (Rule)
 
@@ -84,3 +88,9 @@ Here `class` has been exposed so the alias is not needed.
 noMissingAliases : Config -> Config
 noMissingAliases =
     Config.noMissingAliases
+
+
+{-| Configuration for the NoInconsistentAliases rule.
+-}
+type alias Config =
+    Config.Config

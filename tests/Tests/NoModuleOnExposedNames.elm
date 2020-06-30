@@ -1,4 +1,4 @@
-module NoModuleOnExposedNamesTests exposing (all)
+module Tests.NoModuleOnExposedNames exposing (all)
 
 import NoModuleOnExposedNames exposing (rule)
 import Review.Test

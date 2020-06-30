@@ -1,5 +1,6 @@
 module NoInconsistentAliases.Visitor.Options exposing (AliasLookup, Options, fromConfig)
 
+import Elm.Syntax.ModuleName exposing (ModuleName)
 import NoInconsistentAliases.Config as Config exposing (Config)
 
 
@@ -10,7 +11,7 @@ type alias Options =
 
 
 type alias AliasLookup =
-    String -> Maybe String
+    ModuleName -> Maybe String
 
 
 fromConfig : Config -> Options

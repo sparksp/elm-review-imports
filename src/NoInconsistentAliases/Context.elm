@@ -28,7 +28,7 @@ import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
 
 type Module
     = Module
-        { aliases : Dict String String
+        { aliases : Dict String ModuleName
         , badAliases : BadAliasSet
         , missingAliases : MissingAliasSet
         }
@@ -45,7 +45,7 @@ initial =
 
 addModuleAlias : String -> String -> Module -> Module
 addModuleAlias moduleName moduleAlias (Module context) =
-    Module { context | aliases = Dict.insert moduleAlias moduleName context.aliases }
+    Module { context | aliases = Dict.insert moduleAlias (toModuleName moduleName) context.aliases }
 
 
 addBadAlias : BadAlias -> Module -> Module
@@ -95,7 +95,7 @@ foldBadAliases folder start (Module { badAliases }) =
     BadAliasSet.fold folder start badAliases
 
 
-lookupModuleName : Module -> String -> Maybe String
+lookupModuleName : Module -> String -> Maybe ModuleName
 lookupModuleName (Module { aliases }) moduleAlias =
     Dict.get moduleAlias aliases
 
@@ -103,3 +103,8 @@ lookupModuleName (Module { aliases }) moduleAlias =
 foldMissingAliases : (MissingAlias -> a -> a) -> a -> Module -> a
 foldMissingAliases folder start (Module { missingAliases }) =
     MissingAliasSet.fold folder start missingAliases
+
+
+toModuleName : String -> ModuleName
+toModuleName =
+    String.split "."
