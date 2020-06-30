@@ -50,8 +50,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        with:
-            ref: ${{ github.head_ref }}
       - name: Get yarn cache directory
         id: yarn-cache-dir
         run: echo "::set-output name=path::$(yarn cache dir)"
@@ -71,38 +69,10 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Add yarn bin to path
         run: echo ::add-path::$(yarn bin)
-      - name: Run elm-format
-        run: elm-format --yes
       - name: Run elm-review
         uses: sparksp/elm-review-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Apply elm-review fixes
-        run: yes | elm-review --fix-all
-        continue-on-error: true
-      - name: Checkout new fixes branch
-        if: ${{ github.event_name == 'pull_request' }}
-        run: git checkout -b fixes/${{ github.head_ref }}
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        if: ${{ github.event_name == 'pull_request' }}
-        id: docs-commit
-        with:
-          branch: fixes/${{ github.head_ref }}
-          file_pattern: src/
-          commit_message: 'Apply elm-review fixes'
-          push_options: --force
-        env:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: repo-sync/pull-request@v2
-        if: ${{ steps.docs-commit.outputs.changes_detected == 'true' }}
-        with:
-          source_branch: fixes/${{ github.head_ref }}
-          destination_branch: ${{ github.head_ref }}
-          pr_title: "Apply elm-review fixes"
-          pr_body: "*This is an automated pull request because elm-review found problems that could be fixed automatically.*"
-          pr_reviewer: sparksp
-          pr_assignee: sparksp
-          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Run elm-format
         uses: sparksp/elm-format-action@v1
 
@@ -111,8 +81,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.head_ref }}
       - name: Get yarn cache directory
         id: yarn-cache-dir
         run: echo "::set-output name=path::$(yarn cache dir)"
@@ -132,31 +100,11 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Add yarn bin to path
         run: echo ::add-path::$(yarn bin)
-      - name: Build elm docs
-        run: elm make --docs docs.json
-      - name: Checkout new docs branch
-        if: ${{ github.event_name == 'pull_request' }}
-        run: git checkout -b docs/${{ github.head_ref }}
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        if: ${{ github.event_name == 'pull_request' }}
-        id: docs-commit
-        with:
-          branch: docs/${{ github.head_ref }}
-          file_pattern: docs.json
-          commit_message: Update docs.json
-          push_options: --force
-        env:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: repo-sync/pull-request@v2
-        if: ${{ steps.docs-commit.outputs.changes_detected == 'true' }}
-        with:
-          source_branch: docs/${{ github.head_ref }}
-          destination_branch: ${{ github.head_ref }}
-          pr_title: "Update docs.json"
-          pr_body: "*This is an automated pull request because we found that the docs were out of date.*"
-          pr_reviewer: sparksp
-          pr_assignee: sparksp
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check docs.json is up to date
+        run: |
+          elm make --docs docs.json
+          git add docs.json
+          git diff-index --cached --quiet HEAD --
 
   publish:
     needs: [test, lint, docs]
