@@ -29,49 +29,32 @@ rule config =
 
 
 importVisitor : Options -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
-importVisitor options node context =
-    let
-        moduleNameNode =
-            node |> Node.value |> .moduleName
-
-        moduleName =
-            moduleNameNode |> Node.value |> formatModuleName
-
-        maybeModuleAlias =
-            node |> Node.value |> .moduleAlias |> Maybe.map (Node.map formatModuleName)
-    in
+importVisitor options (Node _ { moduleName, moduleAlias }) context =
     ( []
     , context
-        |> rememberModuleName moduleName
-        |> rememberModuleAlias moduleName maybeModuleAlias
-        |> rememberBadAlias options moduleNameNode maybeModuleAlias
+        |> rememberModuleAlias moduleName moduleAlias
+        |> rememberBadAlias options moduleName moduleAlias
     )
 
 
-rememberModuleName : String -> Context.Module -> Context.Module
-rememberModuleName moduleName context =
-    context |> Context.addModuleAlias moduleName moduleName
-
-
-rememberModuleAlias : String -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberModuleAlias : Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
 rememberModuleAlias moduleName maybeModuleAlias context =
-    case maybeModuleAlias of
-        Just moduleAlias ->
-            context |> Context.addModuleAlias moduleName (Node.value moduleAlias)
+    let
+        moduleAlias =
+            maybeModuleAlias |> Maybe.withDefault moduleName |> Node.map formatModuleName
+    in
+    context |> Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias)
 
-        Nothing ->
-            context
 
-
-rememberBadAlias : Options -> Node ModuleName -> Maybe (Node String) -> Context.Module -> Context.Module
+rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
 rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
     case ( lookupAlias moduleName, maybeModuleAlias ) of
         ( Just expectedAlias, Just (Node moduleAliasRange moduleAlias) ) ->
-            if expectedAlias /= moduleAlias then
+            if [ expectedAlias ] /= moduleAlias then
                 let
                     badAlias =
                         BadAlias.new
-                            { name = moduleAlias
+                            { name = moduleAlias |> formatModuleName
                             , moduleName = moduleName
                             , expectedName = expectedAlias
                             , range = moduleAliasRange

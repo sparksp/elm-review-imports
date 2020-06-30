@@ -43,9 +43,9 @@ initial =
         }
 
 
-addModuleAlias : String -> String -> Module -> Module
+addModuleAlias : ModuleName -> String -> Module -> Module
 addModuleAlias moduleName moduleAlias (Module context) =
-    Module { context | aliases = Dict.insert moduleAlias (toModuleName moduleName) context.aliases }
+    Module { context | aliases = Dict.insert moduleAlias moduleName context.aliases }
 
 
 addBadAlias : BadAlias -> Module -> Module
@@ -103,8 +103,3 @@ lookupModuleName (Module { aliases }) moduleAlias =
 foldMissingAliases : (MissingAlias -> a -> a) -> a -> Module -> a
 foldMissingAliases folder start (Module { missingAliases }) =
     MissingAliasSet.fold folder start missingAliases
-
-
-toModuleName : String -> ModuleName
-toModuleName =
-    String.split "."
