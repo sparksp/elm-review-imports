@@ -1,6 +1,6 @@
 module NoInconsistentAliases.Context exposing
     ( Module, initial
-    , addModuleAlias, lookupModuleName
+    , addModuleAlias, lookupModuleNames
     , addMissingAlias, foldMissingAliases
     , addBadAlias, foldBadAliases
     , addModuleCall
@@ -9,7 +9,7 @@ module NoInconsistentAliases.Context exposing
 {-|
 
 @docs Module, initial
-@docs addModuleAlias, lookupModuleName
+@docs addModuleAlias, lookupModuleNames
 @docs addMissingAlias, foldMissingAliases
 @docs addBadAlias, foldBadAliases
 @docs addModuleCall
@@ -28,7 +28,7 @@ import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
 
 type Module
     = Module
-        { aliases : Dict String ModuleName
+        { aliases : Dict ModuleName String
         , badAliases : BadAliasSet
         , missingAliases : MissingAliasSet
         }
@@ -45,7 +45,7 @@ initial =
 
 addModuleAlias : ModuleName -> String -> Module -> Module
 addModuleAlias moduleName moduleAlias (Module context) =
-    Module { context | aliases = Dict.insert moduleAlias moduleName context.aliases }
+    Module { context | aliases = Dict.insert moduleName moduleAlias context.aliases }
 
 
 addBadAlias : BadAlias -> Module -> Module
@@ -95,11 +95,22 @@ foldBadAliases folder start (Module { badAliases }) =
     BadAliasSet.fold folder start badAliases
 
 
-lookupModuleName : Module -> String -> Maybe ModuleName
-lookupModuleName (Module { aliases }) moduleAlias =
-    Dict.get moduleAlias aliases
+lookupModuleNames : Module -> String -> List ModuleName
+lookupModuleNames (Module { aliases }) moduleAlias =
+    aliases
+        |> Dict.filter (isAliasName moduleAlias)
+        |> Dict.keys
 
 
 foldMissingAliases : (MissingAlias -> a -> a) -> a -> Module -> a
 foldMissingAliases folder start (Module { missingAliases }) =
     MissingAliasSet.fold folder start missingAliases
+
+
+
+--- HELPERS
+
+
+isAliasName : a -> comparable -> a -> Bool
+isAliasName search _ value =
+    search == value
