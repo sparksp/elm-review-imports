@@ -40,6 +40,13 @@ rule =
         ]
         |> NoInconsistentAliases.rule
 
+You can provide alternative aliases to try if the preferred alias is already taken. If all of the given aliases are taken the last will be used.
+
+    NoInconsistentAliases.config
+        [ ( "Html.Attributes", "Attr", [] )
+        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+        ]
+
 -}
 config : List ( String, String, List String ) -> Config
 config =

@@ -23,6 +23,7 @@ config : List Rule
 config =
     [ NoInconsistentAliases.config
         [ ( "Html.Attributes", "Attr", [] )
+        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
         , ( "Json.Decode", "Decode", [] )
         , ( "Json.Encode", "Encode", [] )
         ]
