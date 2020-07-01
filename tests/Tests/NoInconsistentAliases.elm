@@ -447,8 +447,7 @@ incorrectAliasError expectedAlias moduleName wrongAlias =
         { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
         , details =
             [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-            , "You should update the alias to be consistent with the rest of the project. "
-                ++ "Remember to change all references to the alias in this module too."
+            , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
             ]
         , under = wrongAlias
         }
@@ -461,8 +460,7 @@ aliasCollisionError expectedAlias moduleName wrongAlias collisionName =
         , details =
             [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
             , "Your preferred alias has already been taken by `" ++ collisionName ++ "`."
-            , "You should change the alias for both modules to be consistent with the rest of the project. "
-                ++ "Remember to change all references to the alias in this module too."
+            , "You should change the alias for both modules to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
             ]
         , under = wrongAlias
         }
@@ -474,8 +472,7 @@ missingAliasError expectedAlias moduleName =
         { message = "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
         , details =
             [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-            , "You should update the alias to be consistent with the rest of the project. "
-                ++ "Remember to change all references to the alias in this module too."
+            , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
             ]
         , under = moduleName
         }

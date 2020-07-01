@@ -9,8 +9,8 @@ An [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-review/lat
 
 ## Provided Rule
 
-- [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/latest/NoUnusedPorts) - enforce consistent aliases.
-- [`NoModuleOnExposedNames`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/latest/NoModuleOnExposedNames) - forbid module on exposed names.
+- [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.0/NoUnusedPorts) - enforce consistent aliases.
+- [`NoModuleOnExposedNames`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.0/NoModuleOnExposedNames) - forbid module on exposed names.
 
 ## Example Configuration
 
