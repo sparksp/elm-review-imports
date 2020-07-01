@@ -596,6 +596,29 @@ view =
                     [ incorrectAliasError "SvgAttr_" "Svg.Attributes.Extra" "SvgAttr"
                         |> Review.Test.atExactly { start = { row = 5, column = 32 }, end = { row = 5, column = 39 } }
                     ]
+    , test "it reports imports using a fallback alias where the preferred alias is available" <|
+        \() ->
+            """
+module Icon exposing (icon)
+import Svg.Attributes as SvgAttr
+icon = svg [ SvgAttr.class "w-6" ] []
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ incorrectAliasError "Attr" "Svg.Attributes" "SvgAttr"
+                        |> Review.Test.atExactly { start = { row = 3, column = 26 }, end = { row = 3, column = 33 } }
+                        |> Review.Test.whenFixed
+                            """
+module Icon exposing (icon)
+import Svg.Attributes as Attr
+icon = svg [ Attr.class "w-6" ] []
+"""
+                    ]
     ]
 
 
