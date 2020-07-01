@@ -612,6 +612,30 @@ view =
         ]
 """
                     ]
+    , test "reports modules with incorrect aliases and recommends the last fallback if collisions with all aliases" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+import Svg.Attributes as SvgAttr
+import Svg.Attributes.Extra as Attributes
+view =
+    div [ Attr.class "container" ]
+        [ svg [ SvgAttr.class "w-6", Attributes.id "svg" ] []
+        ]
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr", [] )
+                        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+                        , ( "Svg.Attributes.Extra", "Attr", [ "SvgAttr" ] )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ aliasCollisionError "SvgAttr" "Svg.Attributes.Extra" "Attributes"
+                        |> Review.Test.atExactly { start = { row = 5, column = 32 }, end = { row = 5, column = 42 } }
+                    ]
     , test "reports collisions that could be avoided by using the 1st fallback (no fixes)" <|
         \() ->
             """

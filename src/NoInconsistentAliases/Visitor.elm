@@ -139,7 +139,7 @@ foldBadAliasError lookupModuleNames badAlias errors =
         [] ->
             let
                 expectedAlias =
-                    Nonempty.head expectedAliases
+                    Nonempty.last expectedAliases
             in
             Rule.error (collisionAliasError expectedAlias badAlias) badRange
                 :: errors
