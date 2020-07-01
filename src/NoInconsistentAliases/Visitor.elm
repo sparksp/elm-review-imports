@@ -180,8 +180,7 @@ incorrectAliasMessage expectedAlias badAlias =
         "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
     , details =
         [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-        , "You should update the alias to be consistent with the rest of the project. "
-            ++ "Remember to change all references to the alias in this module too."
+        , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
         ]
     }
 
@@ -200,8 +199,7 @@ collisionAliasMessage collisionName expectedAlias badAlias =
     , details =
         [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
         , "Your preferred alias has already been taken by `" ++ formatModuleName collisionName ++ "`."
-        , "You should change the alias for both modules to be consistent with the rest of the project. "
-            ++ "Remember to change all references to the alias in this module too."
+        , "You should change the alias for both modules to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
         ]
     }
 
@@ -216,8 +214,7 @@ missingAliasMessage expectedAlias missingAlias =
         "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
     , details =
         [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-        , "You should update the alias to be consistent with the rest of the project. "
-            ++ "Remember to change all references to the alias in this module too."
+        , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
         ]
     }
 
