@@ -1,6 +1,5 @@
 module NoInconsistentAliases.Visitor exposing (rule)
 
-import Dict
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
@@ -13,6 +12,7 @@ import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
 import NoInconsistentAliases.Visitor.Options as Options exposing (Options)
 import Review.Fix as Fix exposing (Fix)
 import Review.Rule as Rule exposing (Error, Rule)
+import Set
 import Vendor.NameVisitor as NameVisitor
 
 
@@ -52,20 +52,16 @@ rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Cont
 rememberBadAlias { lookupAliases, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
     case ( lookupAliases moduleName, maybeModuleAlias ) of
         ( Just expectedAliases, Just (Node moduleAliasRange moduleAlias) ) ->
-            if Nonempty.all ((/=) (formatModuleName moduleAlias)) expectedAliases then
-                let
-                    badAlias =
-                        BadAlias.new
-                            { name = moduleAlias |> formatModuleName
-                            , moduleName = moduleName
-                            , expectedNames = expectedAliases
-                            , range = moduleAliasRange
-                            }
-                in
-                context |> Context.addBadAlias badAlias
-
-            else
-                context
+            let
+                badAlias =
+                    BadAlias.new
+                        { name = moduleAlias |> formatModuleName
+                        , moduleName = moduleName
+                        , expectedNames = expectedAliases
+                        , range = moduleAliasRange
+                        }
+            in
+            context |> Context.addBadAlias badAlias
 
         ( Just expectedAliases, Nothing ) ->
             if canMissAliases then
@@ -105,52 +101,63 @@ foldBadAliasError lookupModuleNames badAlias errors =
         moduleName =
             badAlias |> BadAlias.mapModuleName identity
 
+        badRange =
+            BadAlias.range badAlias
+
+        badAliasName =
+            badAlias |> BadAlias.mapName identity
+
         expectedAliases =
             badAlias |> BadAlias.mapExpectedNames identity
 
-        preferredAlias =
-            Nonempty.head expectedAliases
+        aliasClashes =
+            detectCollisions (lookupModuleNames badAliasName) moduleName
 
         moduleClashes =
             Nonempty.foldl
-                (\aliasName dict ->
+                (\aliasName set ->
                     case detectCollisions (lookupModuleNames aliasName) moduleName of
                         [] ->
-                            dict
+                            set
 
-                        clashes ->
-                            Dict.insert aliasName clashes dict
+                        _ ->
+                            Set.insert aliasName set
                 )
-                Dict.empty
+                Set.empty
                 expectedAliases
 
         availableAliases =
             expectedAliases
                 |> Nonempty.toList
-                |> List.filter (\aliasName -> Dict.get aliasName moduleClashes == Nothing)
-
-        expectedAlias =
-            List.head availableAliases |> Maybe.withDefault preferredAlias
+                |> List.filter (\aliasName -> not (Set.member aliasName moduleClashes))
     in
-    case ( Dict.toList moduleClashes, availableAliases ) of
-        ( _, _ :: _ ) ->
+    case availableAliases of
+        expectedAlias :: _ ->
+            if badAliasName == expectedAlias then
+                errors
+
+            else
+                case aliasClashes of
+                    [] ->
+                        let
+                            fixes =
+                                Fix.replaceRangeBy badRange expectedAlias
+                                    :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
+                        in
+                        Rule.errorWithFix (incorrectAliasMessage expectedAlias badAlias) badRange fixes
+                            :: errors
+
+                    _ :: _ ->
+                        Rule.error (incorrectAliasMessage expectedAlias badAlias) badRange
+                            :: errors
+
+        [] ->
             let
-                badRange =
-                    BadAlias.range badAlias
-
-                fixes =
-                    Fix.replaceRangeBy badRange expectedAlias
-                        :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
+                expectedAlias =
+                    Nonempty.head expectedAliases
             in
-            Rule.errorWithFix (incorrectAliasMessage expectedAlias badAlias) badRange fixes
+            Rule.error (collisionAliasMessage expectedAlias badAlias) badRange
                 :: errors
-
-        ( _ :: _, _ ) ->
-            Rule.error (collisionAliasMessage expectedAlias badAlias) (BadAlias.range badAlias)
-                :: errors
-
-        ( [], [] ) ->
-            errors
 
 
 foldMissingAliasError : MissingAlias -> List (Error {}) -> List (Error {})

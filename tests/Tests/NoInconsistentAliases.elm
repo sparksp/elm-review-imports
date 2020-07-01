@@ -553,6 +553,49 @@ view =
         ]
 """
                     ]
+    , test "reports collisions that could be avoided by using the 1st fallback (no fixes)" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+import Svg.Attributes as Attr
+view = div [ Attr.class "container" ] []
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr", [] )
+                        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ incorrectAliasError "SvgAttr" "Svg.Attributes" "Attr"
+                        |> Review.Test.atExactly { start = { row = 4, column = 26 }, end = { row = 4, column = 30 } }
+                    ]
+    , test "reports collisions that could be avoided by using the 2nd fallback (no fixes)" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+import Svg.Attributes as SvgAttr
+import Svg.Attributes.Extra as SvgAttr
+view =
+    div [ Attr.class "container" ]
+        [ svg [ SvgAttr.class "w-6", Attributes.id "svg" ] []
+        ]
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr", [] )
+                        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+                        , ( "Svg.Attributes.Extra", "Attr", [ "SvgAttr", "SvgAttr_" ] )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ incorrectAliasError "SvgAttr_" "Svg.Attributes.Extra" "SvgAttr"
+                        |> Review.Test.atExactly { start = { row = 5, column = 32 }, end = { row = 5, column = 39 } }
+                    ]
     ]
 
 
