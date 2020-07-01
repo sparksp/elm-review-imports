@@ -42,6 +42,65 @@ import Html.Attributes as Attr
 view = Html.div [ Attr.class "container" ] []
 """
                     ]
+    , test "reports missing alias with no fixes when one should be used but has collisions" <|
+        \_ ->
+            """
+module Page exposing (view)
+import Html
+import Html.Attributes as Attr
+import Svg.Attributes
+view =
+    Html.div [ Attr.class "container" ]
+        [ svg [ Svg.Attributes.class "w-6" ] []
+        ]
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr", [] )
+                        , ( "Svg.Attributes", "Attr", [] )
+                        ]
+                        |> Rule.noMissingAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ missingAliasCollisionError "Attr" "Svg.Attributes"
+                        |> Review.Test.atExactly { start = { row = 5, column = 8 }, end = { row = 5, column = 22 } }
+                    ]
+    , test "reports missing fallback alias when one should be used" <|
+        \_ ->
+            """
+module Page exposing (view)
+import Html
+import Html.Attributes as Attr
+import Svg.Attributes
+view =
+    Html.div [ Attr.class "container" ]
+        [ svg [ Svg.Attributes.class "w-6" ] []
+        ]
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr", [] )
+                        , ( "Svg.Attributes", "Attr", [ "SvgAttr" ] )
+                        ]
+                        |> Rule.noMissingAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ missingAliasError "SvgAttr" "Svg.Attributes"
+                        |> Review.Test.atExactly { start = { row = 5, column = 8 }, end = { row = 5, column = 22 } }
+                        |> Review.Test.whenFixed
+                            """
+module Page exposing (view)
+import Html
+import Html.Attributes as Attr
+import Svg.Attributes as SvgAttr
+view =
+    Html.div [ Attr.class "container" ]
+        [ svg [ SvgAttr.class "w-6" ] []
+        ]
+"""
+                    ]
     , test "does not report missing aliases when not used" <|
         \_ ->
             """
@@ -635,11 +694,7 @@ aliasCollisionError : String -> String -> String -> Review.Test.ExpectedError
 aliasCollisionError expectedAlias moduleName wrongAlias =
     Review.Test.error
         { message = "Incorrect alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
-        , details =
-            [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-            , "Your preferred alias has already been used by another module so you should review carefully whether to overload this alias or configure another."
-            , "If you change this alias remember to change all references to the alias in this module too."
-            ]
+        , details = collisionAliasDetails expectedAlias moduleName
         , under = wrongAlias
         }
 
@@ -653,8 +708,25 @@ missingAliasError expectedAlias moduleName =
         }
 
 
+missingAliasCollisionError : String -> String -> Review.Test.ExpectedError
+missingAliasCollisionError expectedAlias moduleName =
+    Review.Test.error
+        { message = "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
+        , details = collisionAliasDetails expectedAlias moduleName
+        , under = moduleName
+        }
+
+
 incorrectAliasDetails : String -> String -> List String
 incorrectAliasDetails expectedAlias moduleName =
     [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
     , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
+    ]
+
+
+collisionAliasDetails : String -> String -> List String
+collisionAliasDetails expectedAlias moduleName =
+    [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+    , "Your preferred alias has already been used by another module so you should review carefully whether to overload this alias or configure another."
+    , "If you change this alias remember to change all references to the alias in this module too."
     ]

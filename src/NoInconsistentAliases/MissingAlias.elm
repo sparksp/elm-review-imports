@@ -1,24 +1,25 @@
-module NoInconsistentAliases.MissingAlias exposing (MissingAlias, hasUses, mapExpectedName, mapModuleName, mapUses, new, range, withModuleUse)
+module NoInconsistentAliases.MissingAlias exposing (MissingAlias, hasUses, mapExpectedNames, mapModuleName, mapUses, new, range, withModuleUse)
 
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Range exposing (Range)
+import List.Nonempty exposing (Nonempty)
 import NoInconsistentAliases.ModuleUse exposing (ModuleUse)
 
 
 type MissingAlias
     = MissingAlias
         { moduleName : ModuleName
-        , expectedName : String
+        , expectedNames : Nonempty String
         , at : Range
         , uses : List ModuleUse
         }
 
 
-new : ModuleName -> String -> Range -> MissingAlias
-new newModuleName newExpectedName newRange =
+new : ModuleName -> Nonempty String -> Range -> MissingAlias
+new newModuleName newExpectedNames newRange =
     MissingAlias
         { moduleName = newModuleName
-        , expectedName = newExpectedName
+        , expectedNames = newExpectedNames
         , at = newRange
         , uses = []
         }
@@ -39,9 +40,9 @@ mapModuleName mapper (MissingAlias { moduleName }) =
     mapper moduleName
 
 
-mapExpectedName : (String -> a) -> MissingAlias -> a
-mapExpectedName mapper (MissingAlias { expectedName }) =
-    mapper expectedName
+mapExpectedNames : (Nonempty String -> a) -> MissingAlias -> a
+mapExpectedNames mapper (MissingAlias { expectedNames }) =
+    mapper expectedNames
 
 
 mapUses : (ModuleUse -> a) -> MissingAlias -> List a

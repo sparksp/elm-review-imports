@@ -3,7 +3,7 @@ module NoInconsistentAliases.Visitor exposing (rule)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
-import List.Nonempty as Nonempty
+import List.Nonempty as Nonempty exposing (Nonempty)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -70,7 +70,7 @@ rememberBadAlias { lookupAliases, canMissAliases } (Node moduleNameRange moduleN
             else
                 let
                     missingAlias =
-                        MissingAlias.new moduleName (Nonempty.head expectedAliases) moduleNameRange
+                        MissingAlias.new moduleName expectedAliases moduleNameRange
                 in
                 context |> Context.addMissingAlias missingAlias
 
@@ -92,7 +92,7 @@ finalEvaluation context =
             Context.lookupModuleNames context
     in
     Context.foldBadAliases (foldBadAliasError lookupModuleNames) [] context
-        ++ Context.foldMissingAliases foldMissingAliasError [] context
+        ++ Context.foldMissingAliases (foldMissingAliasError lookupModuleNames) [] context
 
 
 foldBadAliasError : ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
@@ -113,23 +113,8 @@ foldBadAliasError lookupModuleNames badAlias errors =
         aliasClashes =
             detectCollisions (lookupModuleNames badAliasName) moduleName
 
-        moduleClashes =
-            Nonempty.foldl
-                (\aliasName set ->
-                    case detectCollisions (lookupModuleNames aliasName) moduleName of
-                        [] ->
-                            set
-
-                        _ ->
-                            Set.insert aliasName set
-                )
-                Set.empty
-                expectedAliases
-
         availableAliases =
-            expectedAliases
-                |> Nonempty.toList
-                |> List.filter (\aliasName -> not (Set.member aliasName moduleClashes))
+            findAvailableAliases lookupModuleNames moduleName expectedAliases
     in
     case availableAliases of
         expectedAlias :: _ ->
@@ -144,11 +129,11 @@ foldBadAliasError lookupModuleNames badAlias errors =
                                 Fix.replaceRangeBy badRange expectedAlias
                                     :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
                         in
-                        Rule.errorWithFix (incorrectAliasMessage expectedAlias badAlias) badRange fixes
+                        Rule.errorWithFix (incorrectAliasError expectedAlias badAlias) badRange fixes
                             :: errors
 
                     _ :: _ ->
-                        Rule.error (incorrectAliasMessage expectedAlias badAlias) badRange
+                        Rule.error (incorrectAliasError expectedAlias badAlias) badRange
                             :: errors
 
         [] ->
@@ -156,29 +141,63 @@ foldBadAliasError lookupModuleNames badAlias errors =
                 expectedAlias =
                     Nonempty.head expectedAliases
             in
-            Rule.error (collisionAliasMessage expectedAlias badAlias) badRange
+            Rule.error (collisionAliasError expectedAlias badAlias) badRange
                 :: errors
 
 
-foldMissingAliasError : MissingAlias -> List (Error {}) -> List (Error {})
-foldMissingAliasError missingAlias errors =
+foldMissingAliasError : ModuleNameLookup -> MissingAlias -> List (Error {}) -> List (Error {})
+foldMissingAliasError lookupModuleNames missingAlias errors =
     if MissingAlias.hasUses missingAlias then
         let
-            expectedAlias =
-                missingAlias |> MissingAlias.mapExpectedName identity
+            expectedAliases =
+                missingAlias |> MissingAlias.mapExpectedNames identity
+
+            moduleName =
+                missingAlias |> MissingAlias.mapModuleName identity
 
             badRange =
                 MissingAlias.range missingAlias
 
-            fixes =
-                Fix.insertAt badRange.end (" as " ++ expectedAlias)
-                    :: MissingAlias.mapUses (fixModuleUse expectedAlias) missingAlias
+            availableAliases =
+                findAvailableAliases lookupModuleNames moduleName expectedAliases
         in
-        Rule.errorWithFix (missingAliasMessage expectedAlias missingAlias) badRange fixes
-            :: errors
+        case availableAliases of
+            expectedAlias :: _ ->
+                let
+                    fixes =
+                        Fix.insertAt badRange.end (" as " ++ expectedAlias)
+                            :: MissingAlias.mapUses (fixModuleUse expectedAlias) missingAlias
+                in
+                Rule.errorWithFix (missingAliasError expectedAlias missingAlias) badRange fixes
+                    :: errors
+
+            _ ->
+                Rule.error (missingAliasCollisionError (Nonempty.head expectedAliases) missingAlias) badRange
+                    :: errors
 
     else
         errors
+
+
+findAvailableAliases : ModuleNameLookup -> ModuleName -> Nonempty String -> List String
+findAvailableAliases lookupModuleNames moduleName expectedAliases =
+    let
+        moduleClashes =
+            Nonempty.foldl
+                (\aliasName set ->
+                    case detectCollisions (lookupModuleNames aliasName) moduleName of
+                        [] ->
+                            set
+
+                        _ ->
+                            Set.insert aliasName set
+                )
+                Set.empty
+                expectedAliases
+    in
+    expectedAliases
+        |> Nonempty.toList
+        |> List.filter (\aliasName -> not (Set.member aliasName moduleClashes))
 
 
 detectCollisions : List ModuleName -> ModuleName -> List ModuleName
@@ -186,8 +205,8 @@ detectCollisions collisionNames moduleName =
     List.filter ((/=) moduleName) collisionNames
 
 
-incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
-incorrectAliasMessage expectedAlias badAlias =
+incorrectAliasError : String -> BadAlias -> { message : String, details : List String }
+incorrectAliasError expectedAlias badAlias =
     let
         badAliasName =
             BadAlias.mapName identity badAlias
@@ -195,17 +214,13 @@ incorrectAliasMessage expectedAlias badAlias =
         moduleName =
             BadAlias.mapModuleName formatModuleName badAlias
     in
-    { message =
-        "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
-    , details =
-        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-        , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
-        ]
+    { message = incorrectAliasMessage badAliasName moduleName
+    , details = incorrectAliasDetails expectedAlias moduleName
     }
 
 
-collisionAliasMessage : String -> BadAlias -> { message : String, details : List String }
-collisionAliasMessage expectedAlias badAlias =
+collisionAliasError : String -> BadAlias -> { message : String, details : List String }
+collisionAliasError expectedAlias badAlias =
     let
         badAliasName =
             BadAlias.mapName identity badAlias
@@ -213,29 +228,56 @@ collisionAliasMessage expectedAlias badAlias =
         moduleName =
             BadAlias.mapModuleName formatModuleName badAlias
     in
-    { message =
-        "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
-    , details =
-        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-        , "Your preferred alias has already been used by another module so you should review carefully whether to overload this alias or configure another."
-        , "If you change this alias remember to change all references to the alias in this module too."
-        ]
+    { message = incorrectAliasMessage badAliasName moduleName
+    , details = collisionAliasDetails expectedAlias moduleName
     }
 
 
-missingAliasMessage : String -> MissingAlias -> { message : String, details : List String }
-missingAliasMessage expectedAlias missingAlias =
+missingAliasError : String -> MissingAlias -> { message : String, details : List String }
+missingAliasError expectedAlias missingAlias =
     let
         moduleName =
             MissingAlias.mapModuleName formatModuleName missingAlias
     in
-    { message =
-        "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
-    , details =
-        [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
-        , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
-        ]
+    { message = expectedAliasMessage expectedAlias moduleName
+    , details = incorrectAliasDetails expectedAlias moduleName
     }
+
+
+missingAliasCollisionError : String -> MissingAlias -> { message : String, details : List String }
+missingAliasCollisionError expectedAlias missingAlias =
+    let
+        moduleName =
+            MissingAlias.mapModuleName formatModuleName missingAlias
+    in
+    { message = expectedAliasMessage expectedAlias moduleName
+    , details = collisionAliasDetails expectedAlias moduleName
+    }
+
+
+incorrectAliasMessage : String -> String -> String
+incorrectAliasMessage badAliasName moduleName =
+    "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
+
+
+expectedAliasMessage : String -> String -> String
+expectedAliasMessage expectedAlias moduleName =
+    "Expected alias `" ++ expectedAlias ++ "` missing for module `" ++ moduleName ++ "`."
+
+
+incorrectAliasDetails : String -> String -> List String
+incorrectAliasDetails expectedAlias moduleName =
+    [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+    , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
+    ]
+
+
+collisionAliasDetails : String -> String -> List String
+collisionAliasDetails expectedAlias moduleName =
+    [ "This import does not use your preferred alias `" ++ expectedAlias ++ "` for `" ++ moduleName ++ "`."
+    , "Your preferred alias has already been used by another module so you should review carefully whether to overload this alias or configure another."
+    , "If you change this alias remember to change all references to the alias in this module too."
+    ]
 
 
 fixModuleUse : String -> ModuleUse -> Fix
