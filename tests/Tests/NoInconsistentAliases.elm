@@ -652,7 +652,7 @@ view = div [ Attr.class "container" ] []
                         |> rule
                     )
                 |> Review.Test.expectErrors
-                    [ incorrectAliasError "SvgAttr" "Svg.Attributes" "Attr"
+                    [ aliasCollisionError "SvgAttr" "Svg.Attributes" "Attr"
                         |> Review.Test.atExactly { start = { row = 4, column = 26 }, end = { row = 4, column = 30 } }
                     ]
     , test "reports collisions that could be avoided by using the 2nd fallback (no fixes)" <|
@@ -676,7 +676,7 @@ view =
                         |> rule
                     )
                 |> Review.Test.expectErrors
-                    [ incorrectAliasError "SvgAttr_" "Svg.Attributes.Extra" "SvgAttr"
+                    [ aliasCollisionError "SvgAttr_" "Svg.Attributes.Extra" "SvgAttr"
                         |> Review.Test.atExactly { start = { row = 5, column = 32 }, end = { row = 5, column = 39 } }
                     ]
     , test "it reports imports using a fallback alias where the preferred alias is available" <|
@@ -701,6 +701,25 @@ module Icon exposing (icon)
 import Svg.Attributes as Attr
 icon = svg [ Attr.class "w-6" ] []
 """
+                    ]
+    , test "applies preferred aliases in config order" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+import Svg.Attributes as Attr
+view = div [] []
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr", [ "Attr_" ] )
+                        , ( "Html.Attributes", "Attr", [ "Attr_" ] )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ aliasCollisionError "Attr_" "Html.Attributes" "Attr"
+                        |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
                     ]
     ]
 

@@ -1,263 +1,216 @@
 module NoInconsistentAliases.Visitor exposing (rule)
 
+import Dict exposing (Dict)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
+import Elm.Syntax.Range exposing (Range)
 import List.Nonempty as Nonempty exposing (Nonempty)
-import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
-import NoInconsistentAliases.Config exposing (Config)
-import NoInconsistentAliases.Context as Context
-import NoInconsistentAliases.MissingAlias as MissingAlias exposing (MissingAlias)
-import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
-import NoInconsistentAliases.Visitor.Options as Options exposing (Options)
+import NoInconsistentAliases.Config as Config exposing (Config)
 import Review.Fix as Fix exposing (Fix)
-import Review.Rule as Rule exposing (Error, Rule)
-import Set
+import Review.Rule as Rule exposing (Rule)
+import Set exposing (Set)
 import Vendor.NameVisitor as NameVisitor
 
 
 rule : Config -> Rule
 rule config =
-    let
-        options : Options
-        options =
-            Options.fromConfig config
-    in
-    Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
-        |> Rule.withImportVisitor (importVisitor options)
+    Rule.newModuleRuleSchema "NoInconsistentAliases" initialContext
+        |> Rule.withImportVisitor importVisitor
         |> NameVisitor.withNameVisitor moduleCallVisitor
-        |> Rule.withFinalModuleEvaluation finalEvaluation
+        |> Rule.withFinalModuleEvaluation
+            (finalEvaluation
+                { aliases = Config.listAliases config
+                , canMissAliases = Config.canMissAliases config
+                }
+            )
         |> Rule.fromModuleRuleSchema
 
 
-importVisitor : Options -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
-importVisitor options (Node _ { moduleName, moduleAlias }) context =
+importVisitor : Node Import -> Context -> ( List (Rule.Error nothing), Context )
+importVisitor (Node _ { moduleName, moduleAlias }) context =
     ( []
-    , context
-        |> rememberModuleAlias moduleName moduleAlias
-        |> rememberBadAlias options moduleName moduleAlias
+    , rememberImport moduleName moduleAlias context
     )
 
 
-rememberModuleAlias : Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
-rememberModuleAlias moduleName maybeModuleAlias context =
-    let
-        moduleAlias =
-            maybeModuleAlias |> Maybe.withDefault moduleName |> Node.map formatModuleName
-    in
-    context |> Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias)
+moduleCallVisitor : Node ( ModuleName, String ) -> Context -> ( List (Rule.Error nothing), Context )
+moduleCallVisitor (Node range ( moduleName, function )) context =
+    ( []
+    , rememberModuleCall moduleName function range context
+    )
 
 
-rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
-rememberBadAlias { lookupAliases, canMissAliases } (Node moduleNameRange moduleName) maybeModuleAlias context =
-    case ( lookupAliases moduleName, maybeModuleAlias ) of
-        ( Just expectedAliases, Just (Node moduleAliasRange moduleAlias) ) ->
-            let
-                badAlias =
-                    BadAlias.new
-                        { name = moduleAlias |> formatModuleName
-                        , moduleName = moduleName
-                        , expectedNames = expectedAliases
-                        , range = moduleAliasRange
-                        }
-            in
-            context |> Context.addBadAlias badAlias
+finalEvaluation : { aliases : List ( ModuleName, Nonempty String ), canMissAliases : Bool } -> Context -> List (Rule.Error {})
+finalEvaluation { aliases, canMissAliases } context =
+    List.foldl (foldAliases canMissAliases context) ( Set.empty, [] ) aliases
+        |> Tuple.second
 
-        ( Just expectedAliases, Nothing ) ->
+
+foldAliases : Bool -> Context -> ( ModuleName, Nonempty String ) -> ( Set String, List (Rule.Error {}) ) -> ( Set String, List (Rule.Error {}) )
+foldAliases canMissAliases context ( moduleName, aliases ) ( pastAliases, errors ) =
+    ( Nonempty.foldl Set.insert pastAliases aliases
+    , checkModuleImport canMissAliases context pastAliases moduleName aliases errors
+    )
+
+
+checkModuleImport : Bool -> Context -> Set String -> ModuleName -> Nonempty String -> List (Rule.Error {}) -> List (Rule.Error {})
+checkModuleImport canMissAliases context pastAliases moduleName aliases errors =
+    case getModuleAlias moduleName context of
+        Nothing ->
+            errors
+
+        Just ( range, Nothing ) ->
             if canMissAliases then
-                context
-
-            else
-                let
-                    missingAlias =
-                        MissingAlias.new moduleName expectedAliases moduleNameRange
-                in
-                context |> Context.addMissingAlias missingAlias
-
-        ( Nothing, _ ) ->
-            context
-
-
-moduleCallVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )
-moduleCallVisitor node context =
-    case Node.value node of
-        ( moduleName, function ) ->
-            ( [], Context.addModuleCall moduleName function (Node.range node) context )
-
-
-finalEvaluation : Context.Module -> List (Error {})
-finalEvaluation context =
-    let
-        lookupModuleNames =
-            Context.lookupModuleNames context
-    in
-    Context.foldBadAliases (foldBadAliasError lookupModuleNames) [] context
-        ++ Context.foldMissingAliases (foldMissingAliasError lookupModuleNames) [] context
-
-
-foldBadAliasError : ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
-foldBadAliasError lookupModuleNames badAlias errors =
-    let
-        moduleName =
-            badAlias |> BadAlias.mapModuleName identity
-
-        badRange =
-            BadAlias.range badAlias
-
-        badAliasName =
-            badAlias |> BadAlias.mapName identity
-
-        expectedAliases =
-            badAlias |> BadAlias.mapExpectedNames identity
-
-        aliasClashes =
-            detectCollisions (lookupModuleNames badAliasName) moduleName
-
-        availableAliases =
-            findAvailableAliases lookupModuleNames moduleName expectedAliases
-    in
-    case availableAliases of
-        expectedAlias :: _ ->
-            if badAliasName == expectedAlias then
                 errors
 
             else
-                case aliasClashes of
-                    [] ->
-                        let
-                            fixes =
-                                Fix.replaceRangeBy badRange expectedAlias
-                                    :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
-                        in
-                        Rule.errorWithFix (incorrectAliasError expectedAlias badAlias) badRange fixes
-                            :: errors
+                checkForMissingAlias context pastAliases moduleName aliases range errors
 
-                    _ :: _ ->
-                        Rule.error (incorrectAliasError expectedAlias badAlias) badRange
-                            :: errors
+        Just ( _, Just aliasNode ) ->
+            checkForBadAlias context pastAliases moduleName aliases aliasNode errors
 
+
+checkForMissingAlias : Context -> Set String -> ModuleName -> Nonempty String -> Range -> List (Rule.Error {}) -> List (Rule.Error {})
+checkForMissingAlias context pastAliases moduleName aliases range errors =
+    case getModuleCalls moduleName context of
         [] ->
+            errors
+
+        moduleCalls ->
+            case firstAvailableAlias pastAliases aliases of
+                Just expectedAlias ->
+                    let
+                        fixes =
+                            Fix.insertAt range.end (" as " ++ expectedAlias)
+                                :: List.map (fixModuleUse expectedAlias) moduleCalls
+                    in
+                    Rule.errorWithFix (missingAliasError expectedAlias moduleName) range fixes
+                        :: errors
+
+                Nothing ->
+                    Rule.error (missingAliasCollisionError (Nonempty.last aliases) moduleName) range
+                        :: errors
+
+
+checkForBadAlias : Context -> Set String -> ModuleName -> Nonempty String -> Node String -> List (Rule.Error {}) -> List (Rule.Error {})
+checkForBadAlias context pastAliases moduleName aliases (Node range aliasName) errors =
+    case firstAvailableAlias pastAliases aliases of
+        Just expectedAlias ->
+            if expectedAlias /= aliasName then
+                if
+                    hasCollision context moduleName expectedAlias
+                        || hasCollision context moduleName aliasName
+                then
+                    Rule.error (collisionAliasError expectedAlias aliasName moduleName) range
+                        :: errors
+
+                else
+                    let
+                        fixes =
+                            Fix.replaceRangeBy range expectedAlias
+                                :: List.map (fixModuleUse expectedAlias) (getModuleCalls [ aliasName ] context)
+                    in
+                    Rule.errorWithFix (incorrectAliasError expectedAlias aliasName moduleName) range fixes
+                        :: errors
+
+            else
+                errors
+
+        Nothing ->
             let
                 expectedAlias =
-                    Nonempty.last expectedAliases
+                    Nonempty.last aliases
             in
-            Rule.error (collisionAliasError expectedAlias badAlias) badRange
-                :: errors
-
-
-foldMissingAliasError : ModuleNameLookup -> MissingAlias -> List (Error {}) -> List (Error {})
-foldMissingAliasError lookupModuleNames missingAlias errors =
-    if MissingAlias.hasUses missingAlias then
-        let
-            expectedAliases =
-                missingAlias |> MissingAlias.mapExpectedNames identity
-
-            moduleName =
-                missingAlias |> MissingAlias.mapModuleName identity
-
-            badRange =
-                MissingAlias.range missingAlias
-
-            availableAliases =
-                findAvailableAliases lookupModuleNames moduleName expectedAliases
-        in
-        case availableAliases of
-            expectedAlias :: _ ->
-                let
-                    fixes =
-                        Fix.insertAt badRange.end (" as " ++ expectedAlias)
-                            :: MissingAlias.mapUses (fixModuleUse expectedAlias) missingAlias
-                in
-                Rule.errorWithFix (missingAliasError expectedAlias missingAlias) badRange fixes
+            if expectedAlias /= aliasName then
+                Rule.error (collisionAliasError expectedAlias aliasName moduleName) range
                     :: errors
 
-            _ ->
-                Rule.error (missingAliasCollisionError (Nonempty.head expectedAliases) missingAlias) badRange
-                    :: errors
-
-    else
-        errors
+            else
+                errors
 
 
-findAvailableAliases : ModuleNameLookup -> ModuleName -> Nonempty String -> List String
-findAvailableAliases lookupModuleNames moduleName expectedAliases =
+hasCollision : Context -> ModuleName -> String -> Bool
+hasCollision context moduleName expectedName =
+    case findModulesByImport expectedName context of
+        [] ->
+            False
+
+        collisionModuleNames ->
+            List.any ((/=) moduleName) collisionModuleNames
+
+
+firstAvailableAlias : Set String -> Nonempty String -> Maybe String
+firstAvailableAlias pastAliases aliases =
+    Nonempty.foldl (firstAvailableAliasHelp pastAliases) Nothing aliases
+
+
+firstAvailableAliasHelp : Set String -> String -> Maybe String -> Maybe String
+firstAvailableAliasHelp pastAliases alias found =
+    case found of
+        Just _ ->
+            found
+
+        Nothing ->
+            if Set.member alias pastAliases then
+                Nothing
+
+            else
+                Just alias
+
+
+fixModuleUse : String -> Node String -> Fix
+fixModuleUse expectedAlias (Node range function) =
+    Fix.replaceRangeBy range (expectedAlias ++ "." ++ function)
+
+
+incorrectAliasError : String -> String -> ModuleName -> { message : String, details : List String }
+incorrectAliasError expectedAlias badAliasName moduleName =
     let
-        moduleClashes =
-            Nonempty.foldl
-                (\aliasName set ->
-                    case detectCollisions (lookupModuleNames aliasName) moduleName of
-                        [] ->
-                            set
-
-                        _ ->
-                            Set.insert aliasName set
-                )
-                Set.empty
-                expectedAliases
+        moduleNameString =
+            formatModuleName moduleName
     in
-    expectedAliases
-        |> Nonempty.toList
-        |> List.filter (\aliasName -> not (Set.member aliasName moduleClashes))
-
-
-detectCollisions : List ModuleName -> ModuleName -> List ModuleName
-detectCollisions collisionNames moduleName =
-    List.filter ((/=) moduleName) collisionNames
-
-
-incorrectAliasError : String -> BadAlias -> { message : String, details : List String }
-incorrectAliasError expectedAlias badAlias =
-    let
-        badAliasName =
-            BadAlias.mapName identity badAlias
-
-        moduleName =
-            BadAlias.mapModuleName formatModuleName badAlias
-    in
-    { message = incorrectAliasMessage badAliasName moduleName
-    , details = incorrectAliasDetails expectedAlias moduleName
+    { message = incorrectAliasMessage badAliasName moduleNameString
+    , details = incorrectAliasDetails expectedAlias moduleNameString
     }
 
 
-collisionAliasError : String -> BadAlias -> { message : String, details : List String }
-collisionAliasError expectedAlias badAlias =
+collisionAliasError : String -> String -> ModuleName -> { message : String, details : List String }
+collisionAliasError expectedAlias badAliasName moduleName =
     let
-        badAliasName =
-            BadAlias.mapName identity badAlias
-
-        moduleName =
-            BadAlias.mapModuleName formatModuleName badAlias
+        moduleNameString =
+            formatModuleName moduleName
     in
-    { message = incorrectAliasMessage badAliasName moduleName
-    , details = collisionAliasDetails expectedAlias moduleName
-    }
-
-
-missingAliasError : String -> MissingAlias -> { message : String, details : List String }
-missingAliasError expectedAlias missingAlias =
-    let
-        moduleName =
-            MissingAlias.mapModuleName formatModuleName missingAlias
-    in
-    { message = expectedAliasMessage expectedAlias moduleName
-    , details = incorrectAliasDetails expectedAlias moduleName
-    }
-
-
-missingAliasCollisionError : String -> MissingAlias -> { message : String, details : List String }
-missingAliasCollisionError expectedAlias missingAlias =
-    let
-        moduleName =
-            MissingAlias.mapModuleName formatModuleName missingAlias
-    in
-    { message = expectedAliasMessage expectedAlias moduleName
-    , details = collisionAliasDetails expectedAlias moduleName
+    { message = incorrectAliasMessage badAliasName moduleNameString
+    , details = collisionAliasDetails expectedAlias moduleNameString
     }
 
 
 incorrectAliasMessage : String -> String -> String
 incorrectAliasMessage badAliasName moduleName =
     "Incorrect alias `" ++ badAliasName ++ "` for module `" ++ moduleName ++ "`."
+
+
+missingAliasError : String -> ModuleName -> { message : String, details : List String }
+missingAliasError expectedAlias moduleName =
+    let
+        moduleNameString =
+            formatModuleName moduleName
+    in
+    { message = expectedAliasMessage expectedAlias moduleNameString
+    , details = incorrectAliasDetails expectedAlias moduleNameString
+    }
+
+
+missingAliasCollisionError : String -> ModuleName -> { message : String, details : List String }
+missingAliasCollisionError expectedAlias moduleName =
+    let
+        moduleNameString =
+            formatModuleName moduleName
+    in
+    { message = expectedAliasMessage expectedAlias moduleNameString
+    , details = collisionAliasDetails expectedAlias moduleNameString
+    }
 
 
 expectedAliasMessage : String -> String -> String
@@ -280,15 +233,79 @@ collisionAliasDetails expectedAlias moduleName =
     ]
 
 
-fixModuleUse : String -> ModuleUse -> Fix
-fixModuleUse expectedAlias use =
-    Fix.replaceRangeBy (ModuleUse.range use) (ModuleUse.mapFunction (\name -> expectedAlias ++ "." ++ name) use)
+
+--- CONTEXT
+
+
+type alias Context =
+    { imports : Dict ModuleName ( Range, Maybe (Node String) )
+    , moduleCalls : Dict ModuleName (List (Node String))
+    }
+
+
+initialContext : Context
+initialContext =
+    { imports = Dict.empty
+    , moduleCalls = Dict.empty
+    }
+
+
+rememberImport : Node ModuleName -> Maybe (Node ModuleName) -> Context -> Context
+rememberImport (Node range moduleName) maybeModuleAlias context =
+    { context | imports = Dict.insert moduleName ( range, formatAliasName maybeModuleAlias ) context.imports }
+
+
+rememberModuleCall : ModuleName -> String -> Range -> Context -> Context
+rememberModuleCall moduleName function range context =
+    { context
+        | moduleCalls = Dict.update moduleName (addModuleCallUpdater (Node range function)) context.moduleCalls
+    }
+
+
+getModuleAlias : ModuleName -> Context -> Maybe ( Range, Maybe (Node String) )
+getModuleAlias moduleName { imports } =
+    Dict.get moduleName imports
+
+
+getModuleCalls : ModuleName -> Context -> List (Node String)
+getModuleCalls moduleName { moduleCalls } =
+    Dict.get moduleName moduleCalls
+        |> Maybe.withDefault []
+
+
+findModulesByImport : String -> Context -> List ModuleName
+findModulesByImport aliasName { imports } =
+    Dict.foldl (findModuleByAliasHelp aliasName) [] imports
+
+
+addModuleCallUpdater : Node String -> Maybe (List (Node String)) -> Maybe (List (Node String))
+addModuleCallUpdater moduleCall maybeModuleCalls =
+    Just (moduleCall :: Maybe.withDefault [] maybeModuleCalls)
+
+
+findModuleByAliasHelp : String -> ModuleName -> ( Range, Maybe (Node String) ) -> List ModuleName -> List ModuleName
+findModuleByAliasHelp searchAlias moduleName ( _, maybeModuleAlias ) acc =
+    case maybeModuleAlias of
+        Nothing ->
+            if formatModuleName moduleName == searchAlias then
+                moduleName :: acc
+
+            else
+                acc
+
+        Just (Node _ moduleAlias) ->
+            if moduleAlias == searchAlias then
+                moduleName :: acc
+
+            else
+                acc
+
+
+formatAliasName : Maybe (Node ModuleName) -> Maybe (Node String)
+formatAliasName maybeAliasNode =
+    Maybe.map (Node.map formatModuleName) maybeAliasNode
 
 
 formatModuleName : ModuleName -> String
-formatModuleName moduleName =
-    String.join "." moduleName
-
-
-type alias ModuleNameLookup =
-    String -> List ModuleName
+formatModuleName =
+    String.join "."
