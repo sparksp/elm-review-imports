@@ -6,7 +6,7 @@ module NoInconsistentAliases.Config exposing
 {-|
 
 @docs Config, config, noMissingAliases
-@docs canMissAliases, lookupAliases, listAliases
+@docs canMissAliases, listAliases
 
 -}
 
