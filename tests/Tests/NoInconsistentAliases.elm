@@ -10,7 +10,253 @@ all =
     describe "NoInconsistentAliases"
         [ describe "preferred aliases" preferredAliasTests
         , describe "noMissingAliases" noMissingAliasesTests
+        , describe "detectAliases" detectAliasesTests
         ]
+
+
+detectAliasesTests : List Test
+detectAliasesTests =
+    [ test "does not report when module is only aliased in one module" <|
+        \() ->
+            """
+module Page exposing (view)
+import Html.Attributes as Attr
+view = ""
+"""
+                |> Review.Test.run
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
+    , test "reports when two modules alias the same module differently" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "reports only the least popular inconsistent aliases" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""", """
+module Page.Legal exposing (view)
+import Html.Attributes as Attributes
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    , ( "Page.Legal"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "Attributes"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 37 } }
+                        ]
+                      )
+                    ]
+    , test "does not report modules that are not aliased" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
+    , test "reports non-preferred alias only when preferred alias is known" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Html.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                            |> Review.Test.whenFixed
+                                """
+module Page.Home exposing (view)
+import Html.Attributes as Attr
+view = ""
+"""
+                        ]
+                      )
+                    ]
+    , test "reports inconsistent alias despite collision with another alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "reports incorrect alias despite collision with another alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config []
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.Home"
+                      , [ incorrectAliasError "Attr" "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    , test "does not report when there's a collision with a preferred alias" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Contact exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+import Svg.Attributes as Attr
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectNoErrors
+    , test "reports inconsistent aliases when one alias is preferred by another module but not used" <|
+        \() ->
+            [ """
+module Page.About exposing (view)
+import Html.Attributes as Attr
+view = ""
+""", """
+module Page.Home exposing (view)
+import Html.Attributes as A
+view = ""
+""" ]
+                |> Review.Test.runOnModules
+                    (Rule.config
+                        [ ( "Svg.Attributes", "Attr" )
+                        ]
+                        |> Rule.detectAliases
+                        |> rule
+                    )
+                |> Review.Test.expectErrorsForModules
+                    [ ( "Page.About"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "Attr"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 31 } }
+                        ]
+                      )
+                    , ( "Page.Home"
+                      , [ inconsistentAliasError [ "A", "Attr" ] "Html.Attributes" "A"
+                            |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
+                        ]
+                      )
+                    ]
+    ]
 
 
 noMissingAliasesTests : List Test
@@ -475,4 +721,17 @@ missingAliasError expectedAlias moduleName =
             , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
             ]
         , under = moduleName
+        }
+
+
+inconsistentAliasError : List String -> String -> String -> Review.Test.ExpectedError
+inconsistentAliasError knownAliases moduleName wrongAlias =
+    Review.Test.error
+        { message = "Inconsistent alias `" ++ wrongAlias ++ "` for module `" ++ moduleName ++ "`."
+        , details =
+            [ "I found the following aliases for `" ++ moduleName ++ "` across your project:"
+            , knownAliases |> List.map (\line -> "-> " ++ line) |> String.join "\n"
+            , "You should pick one alias to be consistent everywhere. If you configure this rule with your chosen alias then I can attempt to fix this everywhere."
+            ]
+        , under = wrongAlias
         }

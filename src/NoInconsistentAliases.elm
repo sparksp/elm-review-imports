@@ -1,11 +1,11 @@
 module NoInconsistentAliases exposing
-    ( rule, config, noMissingAliases
+    ( rule, config, detectAliases, noMissingAliases
     , Config
     )
 
 {-|
 
-@docs rule, config, noMissingAliases
+@docs rule, config, detectAliases, noMissingAliases
 @docs Config
 
 -}
@@ -22,6 +22,7 @@ import Review.Rule exposing (Rule)
         [ NoInconsistentAliases.config
             [ ( "Html.Attributes", "Attr" )
             ]
+            |> NoInconsistentAliases.detectAliases
             |> NoInconsistentAliases.rule
         ]
 
@@ -44,6 +45,20 @@ rule =
 config : List ( String, String ) -> Config
 config =
     Config.config
+
+
+{-| Compare the import aliases across your project and report any that are inconsistent.
+
+    NoInconsistentAliases.config []
+        |> NoInconsistentAliases.detectAliases
+        |> NoInconsistentAliases.rule
+
+If there's one alias that's used more than any other then the reports will recommend using that alias, otherwise the reports will list the aliases used for importing the module. This option does not offer fixes because you can use the [`config`](#config) list to do just that.
+
+-}
+detectAliases : Config -> Config
+detectAliases =
+    Config.detectAliases
 
 
 {-| Ensure that imports are aliased if a module is used to qualify a function or type, and has a known alias.
