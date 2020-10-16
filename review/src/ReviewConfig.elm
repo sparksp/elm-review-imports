@@ -1,19 +1,26 @@
 module ReviewConfig exposing (config)
 
+{-| Do not rename the ReviewConfig module or the config function, because
+`elm-review` will look for these.
+
+To add packages that contain rules, add them to this review project using
+
+    `elm install author/packagename`
+
+when inside the directory containing this file.
+
+-}
+
 import Documentation.ReadmeLinksPointToCurrentVersion
-import NoAlways
-import NoBooleanCase
 import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoExposingEverything
 import NoForbiddenWords
 import NoImportingEverything
-import NoInconsistentAliases
-import NoLeftPizza
 import NoMissingTypeAnnotation
-import NoModuleOnExposedNames
-import NoRedundantConcat
-import NoRedundantCons
+import NoMissingTypeAnnotationInLetIn
+import NoMissingTypeExpose
+import NoUnused.CustomTypeConstructorArgs
 import NoUnused.CustomTypeConstructors
 import NoUnused.Dependencies
 import NoUnused.Exports
@@ -21,49 +28,24 @@ import NoUnused.Modules
 import NoUnused.Parameters
 import NoUnused.Patterns
 import NoUnused.Variables
-import Review.Rule as Rule exposing (Rule)
 import UseCamelCase
+import Review.Rule as Rule exposing (Rule)
 
 
 config : List Rule
 config =
     [ Documentation.ReadmeLinksPointToCurrentVersion.rule
-    , NoAlways.rule
-    , NoBooleanCase.rule
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Debug.toString is sometimes used in test failure messages.
-              "tests/"
-            ]
+        |> Rule.ignoreErrorsForDirectories [ "tests/" ]
     , NoExposingEverything.rule
-    , NoForbiddenWords.rule
-        [ "- [ ]"
-        , "TODO"
-        ]
+    , NoForbiddenWords.rule [ "REPLACEME", "TODO", "- [ ]" ]
     , NoImportingEverything.rule []
-    , NoInconsistentAliases.config
-        [ ( "Review.Rule", "Rule" )
-        ]
-        |> NoInconsistentAliases.noMissingAliases
-        |> NoInconsistentAliases.rule
-    , NoLeftPizza.rule NoLeftPizza.Any
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Test functions are traditionally built up using a left pizza.
-              -- While we don't want them in our regular code, let's allow them
-              -- just for tests.
-              "tests/"
-            ]
-    , NoLeftPizza.rule NoLeftPizza.Redundant
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Only check tests for redundant left pizza.
-              "src/"
-            ]
     , NoMissingTypeAnnotation.rule
-    , NoModuleOnExposedNames.rule
-    , NoRedundantConcat.rule
-    , NoRedundantCons.rule
+    , NoMissingTypeAnnotationInLetIn.rule
+    , NoMissingTypeExpose.rule
     , NoUnused.CustomTypeConstructors.rule []
+    , NoUnused.CustomTypeConstructorArgs.rule
     , NoUnused.Dependencies.rule
     , NoUnused.Exports.rule
     , NoUnused.Modules.rule

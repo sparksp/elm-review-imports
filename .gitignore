@@ -1,3 +1,6 @@
-*.log
-elm-stuff
-node_modules
+node_modules/
+elm-stuff/
+
+# Editors
+.idea/
+ElmjutsuDumMyM0DuL3.elm
