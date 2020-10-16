@@ -28,6 +28,7 @@ use moduleName moduleUse (MissingAliasSet aliases) =
 
         Just missingAlias ->
             let
+                missingAliasWithUse : MissingAlias
                 missingAliasWithUse =
                     MissingAlias.withModuleUse moduleUse missingAlias
             in

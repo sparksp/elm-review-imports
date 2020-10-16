@@ -113,6 +113,7 @@ rememberExposedNames { moduleName, moduleAlias, exposingList } context =
 
         Just exposes ->
             let
+                moduleNameOrAlias : ModuleName
                 moduleNameOrAlias =
                     moduleAlias
                         |> Maybe.map Node.value
