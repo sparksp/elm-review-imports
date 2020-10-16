@@ -163,6 +163,5 @@ jobs:
 
       - name: Publish package
         uses: dillonkearns/elm-publish-action@1.0.1
-        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
