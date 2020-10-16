@@ -27,6 +27,7 @@ use name moduleUse (BadAliasSet aliases) =
 
         Just badAlias ->
             let
+                badAliasWithUse : BadAlias
                 badAliasWithUse =
                     BadAlias.withModuleUse moduleUse badAlias
             in

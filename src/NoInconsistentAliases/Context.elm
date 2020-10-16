@@ -61,6 +61,7 @@ addMissingAlias missingAlias (Module context) =
 addModuleCall : ModuleName -> String -> Range -> Module -> Module
 addModuleCall moduleName function range context =
     let
+        moduleUse : ModuleUse
         moduleUse =
             ModuleUse.new function range
     in

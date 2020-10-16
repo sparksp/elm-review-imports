@@ -32,6 +32,7 @@ import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
 import Elm.Syntax.Pattern as Pattern exposing (Pattern)
+import Elm.Syntax.Range as Range exposing (Range)
 import Elm.Syntax.Signature exposing (Signature)
 import Elm.Syntax.Type as Type
 import Elm.Syntax.TypeAnnotation as TypeAnnotation exposing (TypeAnnotation)
@@ -74,6 +75,7 @@ withNameVisitor :
     -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withNameVisitor nameVisitor rule =
     let
+        visitor : Visitor context
         visitor =
             NameVisitor nameVisitor
     in
@@ -102,6 +104,7 @@ withValueVisitor :
     -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withValueVisitor valueVisitor rule =
     let
+        visitor : Visitor context
         visitor =
             ValueVisitor valueVisitor
     in
@@ -130,6 +133,7 @@ withTypeVisitor :
     -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withTypeVisitor typeVisitor rule =
     let
+        visitor : Visitor context
         visitor =
             TypeVisitor typeVisitor
     in
@@ -168,6 +172,7 @@ withValueAndTypeVisitors :
     -> Rule.ModuleRuleSchema { state | hasAtLeastOneVisitor : () } context
 withValueAndTypeVisitors { valueVisitor, typeVisitor } rule =
     let
+        visitor : Visitor context
         visitor =
             ValueAndTypeVisitor valueVisitor typeVisitor
     in
@@ -438,9 +443,11 @@ visitPattern node =
                 { start } =
                     Node.range node
 
+                newEnd : Range.Location
                 newEnd =
                     { start | column = start.column + (name :: moduleName |> String.join "." |> String.length) }
 
+                range : Range
                 range =
                     { start = start, end = newEnd }
             in

@@ -19,6 +19,7 @@ all =
             , test "is True with Exposing.All" <|
                 \_ ->
                     let
+                        context : Context.Module
                         context =
                             Context.initial
                                 |> Context.expose [ "Html" ] (Exposing.All Range.emptyRange)
@@ -28,6 +29,7 @@ all =
             , test "is True with matching TypeExpose" <|
                 \_ ->
                     let
+                        context : Context.Module
                         context =
                             Context.initial
                                 |> Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Attribute" ])
@@ -37,6 +39,7 @@ all =
             , test "is True with matching TypeOrAliasExpose" <|
                 \_ ->
                     let
+                        context : Context.Module
                         context =
                             Context.initial
                                 |> Context.expose [ "Html" ] (Exposing.Explicit [ typeOrAliasExpose "Attribute" ])
@@ -46,6 +49,7 @@ all =
             , test "is False with matching FunctionExpose" <|
                 \_ ->
                     let
+                        context : Context.Module
                         context =
                             Context.initial
                                 |> Context.expose [ "Html" ] (Exposing.Explicit [ functionExpose "div" ])
@@ -56,6 +60,7 @@ all =
             , test "is False with no matching TypeExpose" <|
                 \_ ->
                     let
+                        context : Context.Module
                         context =
                             Context.initial
                                 |> Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Html" ])

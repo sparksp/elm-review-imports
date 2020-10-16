@@ -3,6 +3,7 @@ module NoInconsistentAliases.Visitor exposing (rule)
 import Elm.Syntax.Import exposing (Import)
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
+import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
 import NoInconsistentAliases.Config exposing (Config)
 import NoInconsistentAliases.Context as Context
@@ -40,6 +41,7 @@ importVisitor options (Node _ { moduleName, moduleAlias }) context =
 rememberModuleAlias : Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
 rememberModuleAlias moduleName maybeModuleAlias context =
     let
+        moduleAlias : Node String
         moduleAlias =
             maybeModuleAlias |> Maybe.withDefault moduleName |> Node.map formatModuleName
     in
@@ -52,6 +54,7 @@ rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleNam
         ( Just expectedAlias, Just (Node moduleAliasRange moduleAlias) ) ->
             if [ expectedAlias ] /= moduleAlias then
                 let
+                    badAlias : BadAlias
                     badAlias =
                         BadAlias.new
                             { name = moduleAlias |> formatModuleName
@@ -71,6 +74,7 @@ rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleNam
 
             else
                 let
+                    missingAlias : MissingAlias
                     missingAlias =
                         MissingAlias.new moduleName expectedAlias moduleNameRange
                 in
@@ -90,6 +94,7 @@ moduleCallVisitor node context =
 finalEvaluation : Options.AliasLookup -> Context.Module -> List (Error {})
 finalEvaluation lookupAlias context =
     let
+        lookupModuleName : String -> Maybe ModuleName
         lookupModuleName =
             Context.lookupModuleName context
     in
@@ -100,15 +105,19 @@ finalEvaluation lookupAlias context =
 foldBadAliasError : Options.AliasLookup -> ModuleNameLookup -> BadAlias -> List (Error {}) -> List (Error {})
 foldBadAliasError lookupAlias lookupModuleName badAlias errors =
     let
+        moduleName : ModuleName
         moduleName =
             badAlias |> BadAlias.mapModuleName identity
 
+        expectedAlias : String
         expectedAlias =
             badAlias |> BadAlias.mapExpectedName identity
 
+        moduleClash : Maybe ModuleName
         moduleClash =
             detectCollision (lookupModuleName expectedAlias) moduleName
 
+        aliasClash : Maybe String
         aliasClash =
             moduleClash |> Maybe.andThen lookupAlias
     in
@@ -122,9 +131,11 @@ foldBadAliasError lookupAlias lookupModuleName badAlias errors =
 
         ( Nothing, Nothing ) ->
             let
+                badRange : Range
                 badRange =
                     BadAlias.range badAlias
 
+                fixes : List Fix
                 fixes =
                     Fix.replaceRangeBy badRange expectedAlias
                         :: BadAlias.mapUses (fixModuleUse expectedAlias) badAlias
@@ -137,12 +148,15 @@ foldMissingAliasError : MissingAlias -> List (Error {}) -> List (Error {})
 foldMissingAliasError missingAlias errors =
     if MissingAlias.hasUses missingAlias then
         let
+            expectedAlias : String
             expectedAlias =
                 missingAlias |> MissingAlias.mapExpectedName identity
 
+            badRange : Range
             badRange =
                 MissingAlias.range missingAlias
 
+            fixes : List Fix
             fixes =
                 Fix.insertAt badRange.end (" as " ++ expectedAlias)
                     :: MissingAlias.mapUses (fixModuleUse expectedAlias) missingAlias
@@ -170,9 +184,11 @@ detectCollision maybeCollisionName moduleName =
 incorrectAliasMessage : String -> BadAlias -> { message : String, details : List String }
 incorrectAliasMessage expectedAlias badAlias =
     let
+        badAliasName : String
         badAliasName =
             BadAlias.mapName identity badAlias
 
+        moduleName : String
         moduleName =
             BadAlias.mapModuleName formatModuleName badAlias
     in
@@ -188,9 +204,11 @@ incorrectAliasMessage expectedAlias badAlias =
 collisionAliasMessage : ModuleName -> String -> BadAlias -> { message : String, details : List String }
 collisionAliasMessage collisionName expectedAlias badAlias =
     let
+        badAliasName : String
         badAliasName =
             BadAlias.mapName identity badAlias
 
+        moduleName : String
         moduleName =
             BadAlias.mapModuleName formatModuleName badAlias
     in
@@ -207,6 +225,7 @@ collisionAliasMessage collisionName expectedAlias badAlias =
 missingAliasMessage : String -> MissingAlias -> { message : String, details : List String }
 missingAliasMessage expectedAlias missingAlias =
     let
+        moduleName : String
         moduleName =
             MissingAlias.mapModuleName formatModuleName missingAlias
     in
