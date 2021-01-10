@@ -37,7 +37,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Run elm-format
         run: elm-format --yes
@@ -89,7 +89,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Build elm docs
         run: elm make --docs docs.json
