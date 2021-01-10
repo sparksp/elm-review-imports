@@ -37,7 +37,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Run elm-format
         run: elm-format --yes
@@ -47,7 +47,7 @@ jobs:
         run: elm-review --fix-all-without-prompt
         continue-on-error: true
 
-      - uses: peter-evans/create-pull-request@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
           commit-message: 'Apply elm-review fixes'
           branch: fixes/${{ steps.extract_branch.outputs.branch }}
@@ -89,12 +89,12 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Build elm docs
         run: elm make --docs docs.json
 
-      - uses: peter-evans/create-pull-request@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
           commit-message: 'Update docs.json'
           branch: docs/${{ steps.extract_branch.outputs.branch }}

@@ -45,7 +45,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Build elm
         run: elm make --output /dev/null
@@ -81,7 +81,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Run elm-review
         uses: sparksp/elm-review-action@v1
@@ -119,7 +119,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Check docs.json is up to date
         run: |
@@ -156,7 +156,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Add yarn bin to path
-        run: echo ::add-path::$(yarn bin)
+        run: yarn bin >> $GITHUB_PATH
 
       - name: Check that preview/ compiles
         run: node elm-review-package-tests/check-previews-compile.js
