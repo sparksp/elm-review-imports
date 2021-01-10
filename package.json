@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "all": "run-s docs lint:* test:* ;",
     "docs": "elm make --docs=docs.json",
     "docs:preview": "elm-doc-preview",
     "lint:format": "elm-format --yes src tests",
