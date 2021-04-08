@@ -15,36 +15,33 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         id: yarn-cache
         with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         id: elm-cache
         with:
           path: ~/.elm
-          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
+          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json', 'elm-tooling.json') }}
 
       - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        env:
+          NO_ELM_TOOLING_INSTALL: 1
         run: yarn install --frozen-lockfile
 
-      - name: Add yarn bin to path
-        run: yarn bin >> $GITHUB_PATH
+      - name: elm-tooling install
+        run: npx --no-install elm-tooling install
 
       - name: Run elm-format
-        run: elm-format --yes
+        run: npx --no-install elm-format --yes
 
       - name: Apply elm-review fixes
         id: elm-review
-        run: elm-review --fix-all-without-prompt
+        run: npx --no-install elm-review --fix-all-without-prompt
         continue-on-error: true
 
       - uses: peter-evans/create-pull-request@v3
@@ -67,32 +64,29 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
-      - name: Get yarn cache directory
-        id: yarn-cache-dir
-        run: echo "::set-output name=path::$(yarn cache dir)"
-
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         id: yarn-cache
         with:
-          path: ${{ steps.yarn-cache-dir.outputs.path }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v2
         id: elm-cache
         with:
           path: ~/.elm
-          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
+          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json', 'elm-tooling.json') }}
 
       - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        env:
+          NO_ELM_TOOLING_INSTALL: 1
         run: yarn install --frozen-lockfile
 
-      - name: Add yarn bin to path
-        run: yarn bin >> $GITHUB_PATH
+      - name: elm-tooling install
+        run: npx --no-install elm-tooling install
 
       - name: Build elm docs
-        run: elm make --docs docs.json
+        run: npx --no-install elm make --docs docs.json
 
       - uses: peter-evans/create-pull-request@v3
         with:
