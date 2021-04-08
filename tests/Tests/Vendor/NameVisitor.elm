@@ -139,6 +139,8 @@ visitor node =
     case Node.value node of
         Expression.FunctionOrValue _ _ ->
             []
+        Just (Expression.LetExpression _ _) ->
+            []
 """
                 |> Review.Test.run (valueOrTypeVisitorRule context)
                 |> Review.Test.expectErrors
@@ -146,6 +148,8 @@ visitor node =
                     , expectedValueError context "node"
                         |> Review.Test.atExactly { start = { row = 4, column = 21 }, end = { row = 4, column = 25 } }
                     , expectedValueError context "Expression.FunctionOrValue"
+                    , expectedValueError context "Just"
+                    , expectedValueError context "Expression.LetExpression"
                     ]
     , fuzz Fuzz.string "LambdaExpression" <|
         \context ->
