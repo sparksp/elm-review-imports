@@ -137,6 +137,9 @@ jobs:
       - name: elm-tooling install
         run: npx --no-install elm-tooling install
 
+      - name: Add yarn bin to path
+        run: yarn bin >> $GITHUB_PATH
+
       - name: Check that preview/ compiles
         run: node elm-review-package-tests/check-previews-compile.js
 
