@@ -10,8 +10,8 @@ Provides [`elm-review`](https://package.elm-lang.org/packages/jfmengels/elm-revi
 
 ## Provided rules
 
-- [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.0/NoInconsistentAliases) - enforce consistent aliases.
-- [`NoModuleOnExposedNames`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.0/NoModuleOnExposedNames) - forbid module on exposed names.
+- [`NoInconsistentAliases`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.1/NoInconsistentAliases) - enforce consistent aliases.
+- [`NoModuleOnExposedNames`](https://package.elm-lang.org/packages/sparksp/elm-review-imports/1.0.1/NoModuleOnExposedNames) - forbid module on exposed names.
 
 
 ## Configuration
