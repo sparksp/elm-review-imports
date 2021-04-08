@@ -242,6 +242,59 @@ expressionVisitor node =
             []
 """
                     ]
+    , test "fixes incorrect aliases nested in case expressions" <|
+        \_ ->
+            """
+module Visitor exposing (expressionVisitor)
+import Elm.Syntax.Expression as ESE
+import Elm.Syntax.Node as ESN
+expressionVisitor : ESN.Node ESE.Expression -> List (Error {})
+expressionVisitor node =
+    case Just ESN.value node of
+        Just (ESE.FunctionOrValue _ _) ->
+            []
+        _ ->
+            []
+"""
+                |> Review.Test.run
+                    (Rule.config
+                        [ ( "Elm.Syntax.Expression", "Expression" )
+                        , ( "Elm.Syntax.Node", "Node" )
+                        ]
+                        |> rule
+                    )
+                |> Review.Test.expectErrors
+                    [ incorrectAliasError "Expression" "Elm.Syntax.Expression" "ESE"
+                        |> Review.Test.atExactly { start = { row = 3, column = 33 }, end = { row = 3, column = 36 } }
+                        |> Review.Test.whenFixed
+                            """
+module Visitor exposing (expressionVisitor)
+import Elm.Syntax.Expression as Expression
+import Elm.Syntax.Node as ESN
+expressionVisitor : ESN.Node Expression.Expression -> List (Error {})
+expressionVisitor node =
+    case Just ESN.value node of
+        Just (Expression.FunctionOrValue _ _) ->
+            []
+        _ ->
+            []
+"""
+                    , incorrectAliasError "Node" "Elm.Syntax.Node" "ESN"
+                        |> Review.Test.atExactly { start = { row = 4, column = 27 }, end = { row = 4, column = 30 } }
+                        |> Review.Test.whenFixed
+                            """
+module Visitor exposing (expressionVisitor)
+import Elm.Syntax.Expression as ESE
+import Elm.Syntax.Node as Node
+expressionVisitor : Node.Node ESE.Expression -> List (Error {})
+expressionVisitor node =
+    case Just Node.value node of
+        Just (ESE.FunctionOrValue _ _) ->
+            []
+        _ ->
+            []
+"""
+                    ]
     , test "fixes incorrect aliases in function arguments" <|
         \_ ->
             """

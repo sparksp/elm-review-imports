@@ -438,7 +438,7 @@ visitPattern node =
         Pattern.ListPattern list ->
             visitPatternList list
 
-        Pattern.NamedPattern { moduleName, name } _ ->
+        Pattern.NamedPattern { moduleName, name } patterns ->
             let
                 { start } =
                     Node.range node
@@ -452,6 +452,7 @@ visitPattern node =
                     { start = start, end = newEnd }
             in
             visitValue (Node range ( moduleName, name ))
+                ++ visitPatternList patterns
 
         Pattern.AsPattern pattern _ ->
             visitPattern pattern
