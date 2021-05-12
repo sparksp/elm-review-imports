@@ -1,0 +1,52 @@
+name: Release Checks
+on:
+  push:
+    branches:
+      - 'release/**'
+      - 'release-**'
+
+jobs:
+  examples:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.4
+
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - uses: actions/cache@v2.1.5
+        id: yarn-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
+          restore-keys: ${{ runner.os }}-node_modules
+
+      - uses: actions/cache@v2.1.5
+        with:
+          path: ~/.elm
+          key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json', 'elm-tooling.json') }}
+
+      - name: Install dependencies
+        if: steps.yarn-cache.outputs.cache-hit != 'true'
+        env:
+          NO_ELM_TOOLING_INSTALL: 1
+        run: yarn install --frozen-lockfile
+
+      - name: Install elm tooling
+        run: npx --no-install elm-tooling install
+
+      - name: Check that examples are up to date
+        run: npx --no-install node elm-review-package-tests/check-examples-were-updated.js
+
+      - uses: peter-evans/create-pull-request@v3.9.1
+        if: always()
+        with:
+          commit-message: 'Update examples'
+          branch: examples/${{ steps.extract_branch.outputs.branch }}
+          title: "Update examples"
+          body: "*This is an automated pull request because we found that the examples were out of date.*"
+          reviewers: sparksp
+          assignees: sparksp
