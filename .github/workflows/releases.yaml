@@ -41,7 +41,7 @@ jobs:
       - name: Check that examples are up to date
         run: npx --no-install node elm-review-package-tests/check-examples-were-updated.js
 
-      - uses: peter-evans/create-pull-request@v3.10.0
+      - uses: peter-evans/create-pull-request@v3.10.1
         if: always()
         with:
           commit-message: 'Update examples'
