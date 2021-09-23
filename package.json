@@ -20,7 +20,7 @@
     "elm-test": "^0.19.1-revision7",
     "elm-tooling": "^1.5.0",
     "fs-extra": "^10.0.0",
-    "glob": "^7.1.7",
+    "glob": "^7.2.0",
     "npm-run-all": "^4.1.5"
   },
   "license": "MIT"
