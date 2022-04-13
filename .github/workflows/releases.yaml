@@ -17,14 +17,14 @@ jobs:
         run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
         id: extract_branch
 
-      - uses: actions/cache@v3.0.1
+      - uses: actions/cache@v3
         id: yarn-cache
         with:
           path: node_modules
           key: ${{ runner.os }}-node_modules-${{ hashFiles('yarn.lock') }}
           restore-keys: ${{ runner.os }}-node_modules
 
-      - uses: actions/cache@v3.0.1
+      - uses: actions/cache@v3
         with:
           path: ~/.elm
           key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json', 'elm-tooling.json') }}
@@ -41,7 +41,7 @@ jobs:
       - name: Check that examples are up to date
         run: npx --no-install node elm-review-package-tests/check-examples-were-updated.js
 
-      - uses: peter-evans/create-pull-request@v4.0.1
+      - uses: peter-evans/create-pull-request@v4
         if: always()
         with:
           commit-message: 'Update examples'
