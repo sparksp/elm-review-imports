@@ -7,7 +7,7 @@
     "lint:format": "elm-format --yes src tests",
     "lint:review": "elm-review",
     "lint": "run-s lint:* ;",
-    "test:elm": "elm-test",
+    "test:elm": "elm-test-rs",
     "test:package": "node elm-review-package-tests/check-previews-compile.js",
     "test": "run-s test:* ;",
     "elm-bump": "npm-run-all --print-name --silent --sequential test bump-version 'test:review -- --fix-all-without-prompt' update-examples",
@@ -17,7 +17,6 @@
   "dependencies": {
     "elm-doc-preview": "^5.0.5",
     "elm-review": "^2.7.1",
-    "elm-test": "^0.19.1-revision7",
     "elm-tooling": "^1.8.0",
     "fs-extra": "^10.1.0",
     "glob": "^8.0.1",
