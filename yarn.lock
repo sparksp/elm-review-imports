@@ -522,10 +522,10 @@ elm-test@^0.19.1-revision7:
     which "^2.0.2"
     xmlbuilder "^15.1.0"
 
-elm-tooling@^1.2.0, elm-tooling@^1.5.0, elm-tooling@^1.6.0:
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.7.0.tgz#c365b3f7aa21ee67eb4104136c146d500d1887f4"
-  integrity sha512-EHZ54voWrG3BhUONbH/wFw5U95H6N7R4QFgXHDrPIaDBDdeyNkpFu4QWArSWkhzxyCF7hqT8ya2yy7SferDsgg==
+elm-tooling@^1.2.0, elm-tooling@^1.6.0, elm-tooling@^1.8.0:
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.8.0.tgz#366870f95c1eb678f89ac8b7608869c7d3e1d86c"
+  integrity sha512-IjMvW/VHqxLidlJSAocBGDBmqiZ1NS0lK/UCMRU4ULEEaTVjpSd/9Dv0mH2ok0H0egSTYx19GnrdL4Lq9h+z+A==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
