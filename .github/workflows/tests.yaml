@@ -36,7 +36,7 @@ jobs:
         run: npx --no-install elm make --output /dev/null
 
       - name: Run elm-test
-        run: npx --no-install elm-test
+        run: npx --no-install elm-test-rs
 
   lint:
     runs-on: ubuntu-latest
