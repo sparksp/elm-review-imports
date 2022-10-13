@@ -472,10 +472,10 @@ elm-doc-preview@^5.0.5:
     tmp "0.1.0"
     ws "^7.2.3"
 
-elm-review@^2.7.5:
-  version "2.7.5"
-  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.7.5.tgz#733c77e9acd0b623626ebf10a042a7554d256471"
-  integrity sha512-i9K8G99fiS4MkU2P3Tjk7BfN2PFPRPFBgcugQODrIDAjm1PtGCueFDkzBpaCDDuqkrC3Dy4KEYrnGPlCCdcO8Q==
+elm-review@^2.7.6:
+  version "2.7.6"
+  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.7.6.tgz#9357d7f58ca0e5af0562e6bae0587a78b3d9264c"
+  integrity sha512-q2CJ0VialKNzQjwUDu1utXRWBslNRgzsi8Ghhhu7oTl2Oee88cAd90XifChmfTVm9dl7oqwHuLPzjxH7c9SCEA==
   dependencies:
     chalk "^4.0.0"
     chokidar "^3.5.2"
