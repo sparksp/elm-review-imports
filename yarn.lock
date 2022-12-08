@@ -472,10 +472,10 @@ elm-doc-preview@^5.0.5:
     tmp "0.1.0"
     ws "^7.2.3"
 
-elm-review@^2.8.4:
-  version "2.8.4"
-  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.8.4.tgz#c7765fcf9c18ebb172c3400f827e7896423692b4"
-  integrity sha512-oLIQa9C2eNs6VAu+KetZmkZBYf/zKDPUnQQ9Ft3lIrWT2M5wMQR9/vPHWnxTUsVPk7ufXowhG6WjGblJNRWpXw==
+elm-review@^2.8.5:
+  version "2.8.5"
+  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.8.5.tgz#b14b0b7f1d6b57f17a320118ce08c7ed7cf15ce5"
+  integrity sha512-e3HmCoBZPdcnwdyelnL02GVE1ZXOIjuP/fo4DvrQjxd5082b4lOUxzbh/pWeKdU9a1mtrHNYkWalEXPYeig3Kw==
   dependencies:
     chalk "^4.0.0"
     chokidar "^3.5.2"
@@ -487,7 +487,7 @@ elm-review@^2.8.4:
     fs-extra "^9.0.0"
     glob "^7.1.4"
     got "^11.8.5"
-    minimist "^1.2.0"
+    minimist "^1.2.6"
     ora "^5.4.0"
     path-key "^3.1.1"
     prompts "^2.2.1"
@@ -1156,10 +1156,10 @@ minimatch@^5.0.1:
   dependencies:
     brace-expansion "^2.0.1"
 
-minimist@^1.2.0, minimist@^1.2.5:
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
-  integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
+minimist@^1.2.0, minimist@^1.2.5, minimist@^1.2.6:
+  version "1.2.7"
+  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.7.tgz#daa1c4d91f507390437c6a8bc01078e7000c4d18"
+  integrity sha512-bzfL1YUZsP41gmu/qjrEk0Q6i2ix/cVeAhbCbqH9u3zYutS1cLg00qhrD0M2MVdCcx4Sc0UpP2eBWo9rotpq6g==
 
 mkdirp@^0.5.1:
   version "0.5.5"
