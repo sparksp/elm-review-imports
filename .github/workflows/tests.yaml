@@ -38,6 +38,9 @@ jobs:
       - name: Run elm-test
         run: npx --no-install elm-test-rs
 
+      - name: Check preview/ compiles
+        run: node elm-review-package-tests/check-previews-compile.js
+
   lint:
     runs-on: ubuntu-latest
 
