@@ -17,6 +17,7 @@
             "jfmengels/elm-review-the-elm-architecture": "1.0.3",
             "jfmengels/elm-review-unused": "1.1.29",
             "lue-bird/elm-review-record-alias-constructor": "1.1.2",
+            "mthadley/elm-review-unit": "2.0.2",
             "sparksp/elm-review-always": "1.0.6",
             "sparksp/elm-review-camelcase": "1.1.0",
             "sparksp/elm-review-forbidden-words": "1.0.1",

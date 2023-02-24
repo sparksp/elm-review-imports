@@ -16,7 +16,7 @@ all =
 noMissingAliasesTests : List Test
 noMissingAliasesTests =
     [ test "reports missing alias when one should be used" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html
@@ -42,7 +42,7 @@ view = Html.div [ Attr.class "container" ] []
 """
                     ]
     , test "does not report missing aliases when not used" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html
@@ -58,7 +58,7 @@ view = Html.div [ class "container" ] []
                     )
                 |> Review.Test.expectNoErrors
     , test "does not report missing aliases when the option is not set" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html
@@ -78,7 +78,7 @@ view = Html.div [ Html.Attributes.class "container" ] []
 preferredAliasTests : List Test
 preferredAliasTests =
     [ test "reports incorrect aliases" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Html
@@ -103,7 +103,7 @@ main = Html.div [ Attr.class "container" ] []
 """
                     ]
     , test "fixes incorrect aliases in a function signature" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Json.Encode as E
@@ -132,7 +132,7 @@ main =
 """
                     ]
     , test "fixes incorrect aliases in a type alias" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Json.Encode as E
@@ -163,7 +163,7 @@ main =
 """
                     ]
     , test "fixes incorrect aliases in a custom type constructor" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Json.Encode as E
@@ -190,7 +190,7 @@ main = Page.main
 """
                     ]
     , test "fixes incorrect aliases in case expressions" <|
-        \_ ->
+        \() ->
             """
 module Visitor exposing (expressionVisitor)
 import Elm.Syntax.Expression as ESE
@@ -243,7 +243,7 @@ expressionVisitor node =
 """
                     ]
     , test "fixes incorrect aliases nested in case expressions" <|
-        \_ ->
+        \() ->
             """
 module Visitor exposing (expressionVisitor)
 import Elm.Syntax.Expression as ESE
@@ -296,7 +296,7 @@ expressionVisitor node =
 """
                     ]
     , test "fixes incorrect aliases in function arguments" <|
-        \_ ->
+        \() ->
             """
 module Visitor exposing (getRange)
 import Elm.Syntax.Node as ESN
@@ -319,7 +319,7 @@ getRange ((Node.Node range _) as node) = range
 """
                     ]
     , test "fixes incorrect aliases in let blocks" <|
-        \_ ->
+        \() ->
             """
 module Visitor exposing (shiftRange)
 import Elm.Syntax.Node as ESN
@@ -360,7 +360,7 @@ shiftRange input _ _ =
 """
                     ]
     , test "fixes incorrect aliases in a lambda function" <|
-        \_ ->
+        \() ->
             """
 module NoCode exposing (visitor)
 import Elm.Syntax.Node as ESN
@@ -401,7 +401,7 @@ visitor list =
 """
                     ]
     , test "does not offer a fix when there's an alias collision" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html.Attributes as A
@@ -419,7 +419,7 @@ view = div [ A.class "container" ] []
                         |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
                     ]
     , test "does not offer a fix when there's a module collision" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html.Attributes as A
@@ -437,7 +437,7 @@ view = div [ A.class "container" ] []
                         |> Review.Test.atExactly { start = { row = 3, column = 27 }, end = { row = 3, column = 28 } }
                     ]
     , test "does not report when there's a collision with another preferred alias" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (view)
 import Html.Attributes as A
@@ -453,7 +453,7 @@ view = div [ A.class "container" ] []
                     )
                 |> Review.Test.expectNoErrors
     , test "does not report modules imported with no alias" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Html.Attributes
@@ -466,7 +466,7 @@ main = 1"""
                     )
                 |> Review.Test.expectNoErrors
     , test "does not report modules with the correct alias" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Html.Attributes as Attr
@@ -479,7 +479,7 @@ main = 1"""
                     )
                 |> Review.Test.expectNoErrors
     , test "does not report modules with no preferred alias" <|
-        \_ ->
+        \() ->
             """
 module Main exposing (main)
 import Json.Encode as E

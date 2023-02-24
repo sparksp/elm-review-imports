@@ -438,7 +438,7 @@ view page =
 contextTests : List Test
 contextTests =
     [ test "mutates context" <|
-        \_ ->
+        \() ->
             """
 module Page exposing (Page)
 view : Page -> Html msg

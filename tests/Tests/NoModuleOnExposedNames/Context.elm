@@ -13,11 +13,11 @@ all =
     describe "NoModuleOnExposedNames.Context"
         [ describe "isTypeExposed"
             [ test "is False with no imports" <|
-                \_ ->
+                \() ->
                     Context.isTypeExposed Context.initial [ "Html" ] "Attribute"
                         |> Expect.equal False
             , test "is True with Exposing.All" <|
-                \_ ->
+                \() ->
                     let
                         context : Context.Module
                         context =
@@ -27,7 +27,7 @@ all =
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
             , test "is True with matching TypeExpose" <|
-                \_ ->
+                \() ->
                     let
                         context : Context.Module
                         context =
@@ -37,7 +37,7 @@ all =
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
             , test "is True with matching TypeOrAliasExpose" <|
-                \_ ->
+                \() ->
                     let
                         context : Context.Module
                         context =
@@ -47,7 +47,7 @@ all =
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
             , test "is False with matching FunctionExpose" <|
-                \_ ->
+                \() ->
                     let
                         context : Context.Module
                         context =
@@ -58,7 +58,7 @@ all =
                     Context.isTypeExposed context [ "Html" ] "div"
                         |> Expect.equal False
             , test "is False with no matching TypeExpose" <|
-                \_ ->
+                \() ->
                     let
                         context : Context.Module
                         context =
