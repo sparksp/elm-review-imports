@@ -24,7 +24,9 @@ import NoRecordAliasWithConstructor
 import NoRecursiveUpdate
 import NoRedundantConcat
 import NoRedundantCons
+import NoSimpleLetBody
 import NoUnmatchedUnit
+import NoUnnecessaryTrailingUnderscore
 import NoUnsafePorts
 import NoUnused.CustomTypeConstructorArgs
 import NoUnused.CustomTypeConstructors
@@ -97,8 +99,10 @@ config =
     , NoRecursiveUpdate.rule
     , NoRedundantConcat.rule
     , NoRedundantCons.rule
+    , NoSimpleLetBody.rule
     , NoUnmatchedUnit.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
+    , NoUnnecessaryTrailingUnderscore.rule
     , NoUnused.CustomTypeConstructors.rule []
     , NoUnused.CustomTypeConstructorArgs.rule
     , NoUnused.Dependencies.rule
