@@ -19,9 +19,14 @@ import NoMissingTypeAnnotation
 import NoMissingTypeAnnotationInLetIn
 import NoMissingTypeExpose
 import NoModuleOnExposedNames
+import NoRecordAliasConstructor
+import NoRecordAliasWithConstructor
 import NoRecursiveUpdate
 import NoRedundantConcat
 import NoRedundantCons
+import NoSimpleLetBody
+import NoUnmatchedUnit
+import NoUnnecessaryTrailingUnderscore
 import NoUnsafePorts
 import NoUnused.CustomTypeConstructorArgs
 import NoUnused.CustomTypeConstructors
@@ -34,6 +39,7 @@ import NoUnused.Variables
 import NoUnusedPorts
 import NoUselessSubscriptions
 import Review.Rule as Rule exposing (Rule)
+import Simplify
 import UseCamelCase
 import Vendor.NoFullyAppliedPrefixOperator as NoFullyAppliedPrefixOperator
 
@@ -88,10 +94,15 @@ config =
     , NoMissingTypeAnnotationInLetIn.rule
     , NoMissingTypeExpose.rule
     , NoModuleOnExposedNames.rule
+    , NoRecordAliasConstructor.rule
+    , NoRecordAliasWithConstructor.rule
     , NoRecursiveUpdate.rule
     , NoRedundantConcat.rule
     , NoRedundantCons.rule
+    , NoSimpleLetBody.rule
+    , NoUnmatchedUnit.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
+    , NoUnnecessaryTrailingUnderscore.rule
     , NoUnused.CustomTypeConstructors.rule []
     , NoUnused.CustomTypeConstructorArgs.rule
     , NoUnused.Dependencies.rule
@@ -102,6 +113,7 @@ config =
     , NoUnusedPorts.rule
     , NoUnused.Variables.rule
     , NoUselessSubscriptions.rule
+    , Simplify.rule Simplify.defaults
     , UseCamelCase.rule UseCamelCase.default
     ]
         |> List.map

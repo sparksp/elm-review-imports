@@ -4,7 +4,7 @@
     "all": "run-s docs lint:* test:* ;",
     "docs": "elm make --docs=docs.json",
     "docs:preview": "elm-doc-preview",
-    "lint:format": "elm-format --yes src tests",
+    "lint:format": "elm-format --yes src tests review/src",
     "lint:review": "elm-review",
     "lint": "run-s lint:* ;",
     "test:elm": "elm-test-rs",

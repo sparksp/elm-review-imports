@@ -9,7 +9,7 @@ all : Test
 all =
     describe "NoModuleOnExposedNames"
         [ test "reports modules used on exposed values" <|
-            \_ ->
+            \() ->
                 """
 module Page exposing (view)
 import Html.Attributes as Attr exposing (class)
@@ -28,7 +28,7 @@ view children =
 """
                         ]
         , test "reports modules used on exposed types" <|
-            \_ ->
+            \() ->
                 """
 module Page exposing (view)
 import Html exposing (Html, Attribute)
@@ -49,7 +49,7 @@ view children =
 """
                         ]
         , test "does not report names not exposed" <|
-            \_ ->
+            \() ->
                 """
 module Page exposing (view)
 import Html.Attributes as Attr
