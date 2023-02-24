@@ -2,12 +2,14 @@ module NoInconsistentAliases.Visitor.Options exposing (AliasLookup, Options, fro
 
 import Elm.Syntax.ModuleName exposing (ModuleName)
 import NoInconsistentAliases.Config as Config exposing (Config)
+import RecordWithoutConstructorFunction exposing (RecordWithoutConstructorFunction)
 
 
 type alias Options =
-    { lookupAlias : AliasLookup
-    , canMissAliases : Bool
-    }
+    RecordWithoutConstructorFunction
+        { lookupAlias : AliasLookup
+        , canMissAliases : Bool
+        }
 
 
 type alias AliasLookup =
