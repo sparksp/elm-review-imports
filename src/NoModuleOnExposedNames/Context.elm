@@ -49,7 +49,10 @@ isTypeExposed (Expose exposes) moduleName name =
 
 isTypeNamed : String -> Node Exposing.TopLevelExpose -> Bool
 isTypeNamed name topLevelExpose =
-    (topLevelExpose |> Node.value |> exposingTypeName) == Just name
+    (Node.value topLevelExpose
+        |> exposingTypeName
+    )
+        == Just name
 
 
 exposingTypeName : Exposing.TopLevelExpose -> Maybe String

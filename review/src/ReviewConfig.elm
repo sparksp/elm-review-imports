@@ -12,7 +12,6 @@ import NoExposingEverything
 import NoForbiddenWords
 import NoImportingEverything
 import NoInconsistentAliases
-import NoLeftPizza
 import NoMissingSubscriptionsCall
 import NoMissingTypeAnnotation
 import NoMissingTypeAnnotationInLetIn
@@ -36,6 +35,16 @@ import NoUnused.Variables
 import NoUnusedPorts
 import NoUselessSubscriptions
 import Review.Rule as Rule exposing (Rule)
+import ReviewPipelineStyles
+import ReviewPipelineStyles.Custom exposing (noSinglePiplinesWithSimpleInputs)
+import ReviewPipelineStyles.Premade
+    exposing
+        ( noMultilineLeftPizza
+        , noPipelinesWithConfusingNonCommutativeFunctions
+        , noRepeatedParentheticalApplication
+        , noSemanticallyInfixFunctionsInLeftPipelines
+        , noSingleLineRightPizza
+        )
 import Simplify
 import UseCamelCase
 import Vendor.NoFullyAppliedPrefixOperator as NoFullyAppliedPrefixOperator
@@ -73,18 +82,6 @@ config =
         ]
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule
-    , NoLeftPizza.rule NoLeftPizza.Any
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Test functions are traditionally built up using a left pizza.
-              -- While we don't want them in our regular code, let's allow them
-              -- just for tests.
-              "tests/"
-            ]
-    , NoLeftPizza.rule NoLeftPizza.Redundant
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Only check tests for redundant left pizza.
-              "src/"
-            ]
     , NoMissingSubscriptionsCall.rule
     , NoMissingTypeAnnotation.rule
     , NoMissingTypeAnnotationInLetIn.rule
@@ -107,6 +104,15 @@ config =
     , NoUnusedPorts.rule
     , NoUnused.Variables.rule
     , NoUselessSubscriptions.rule
+    , ReviewPipelineStyles.rule <|
+        List.concat
+            [ noMultilineLeftPizza
+            , noSingleLineRightPizza
+            , noRepeatedParentheticalApplication
+            , noPipelinesWithConfusingNonCommutativeFunctions
+            , noSemanticallyInfixFunctionsInLeftPipelines
+            , noSinglePiplinesWithSimpleInputs
+            ]
     , Simplify.rule Simplify.defaults
     , UseCamelCase.rule UseCamelCase.default
     ]

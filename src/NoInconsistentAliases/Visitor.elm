@@ -44,9 +44,11 @@ rememberModuleAlias moduleName maybeModuleAlias context =
     let
         moduleAlias : Node String
         moduleAlias =
-            maybeModuleAlias |> Maybe.withDefault moduleName |> Node.map formatModuleName
+            maybeModuleAlias
+                |> Maybe.withDefault moduleName
+                |> Node.map formatModuleName
     in
-    context |> Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias)
+    Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias) context
 
 
 rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
@@ -58,13 +60,13 @@ rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleNam
                     badAlias : BadAlias
                     badAlias =
                         BadAlias.new
-                            { name = moduleAlias |> formatModuleName
+                            { name = formatModuleName moduleAlias
                             , moduleName = moduleName
                             , expectedName = expectedAlias
                             , range = moduleAliasRange
                             }
                 in
-                context |> Context.addBadAlias badAlias
+                Context.addBadAlias badAlias context
 
             else
                 context
@@ -79,7 +81,7 @@ rememberBadAlias { lookupAlias, canMissAliases } (Node moduleNameRange moduleNam
                     missingAlias =
                         MissingAlias.new moduleName expectedAlias moduleNameRange
                 in
-                context |> Context.addMissingAlias missingAlias
+                Context.addMissingAlias missingAlias context
 
         ( Nothing, _ ) ->
             context
@@ -110,11 +112,11 @@ foldBadAliasError lookupAlias lookupModuleName badAlias errors =
     let
         moduleName : ModuleName
         moduleName =
-            badAlias |> BadAlias.mapModuleName identity
+            BadAlias.mapModuleName identity badAlias
 
         expectedAlias : String
         expectedAlias =
-            badAlias |> BadAlias.mapExpectedName identity
+            BadAlias.mapExpectedName identity badAlias
 
         moduleClash : Maybe ModuleName
         moduleClash =
@@ -122,7 +124,7 @@ foldBadAliasError lookupAlias lookupModuleName badAlias errors =
 
         aliasClash : Maybe String
         aliasClash =
-            moduleClash |> Maybe.andThen lookupAlias
+            Maybe.andThen lookupAlias moduleClash
     in
     case ( aliasClash, moduleClash ) of
         ( Just _, _ ) ->
@@ -153,7 +155,7 @@ foldMissingAliasError missingAlias errors =
         let
             expectedAlias : String
             expectedAlias =
-                missingAlias |> MissingAlias.mapExpectedName identity
+                MissingAlias.mapExpectedName identity missingAlias
 
             badRange : Range
             badRange =
@@ -243,7 +245,8 @@ missingAliasMessage expectedAlias missingAlias =
 
 fixModuleUse : String -> ModuleUse -> Fix
 fixModuleUse expectedAlias use =
-    Fix.replaceRangeBy (ModuleUse.range use) (ModuleUse.mapFunction (\name -> expectedAlias ++ "." ++ name) use)
+    ModuleUse.mapFunction (\name -> expectedAlias ++ "." ++ name) use
+        |> Fix.replaceRangeBy (ModuleUse.range use)
 
 
 formatModuleName : ModuleName -> String
