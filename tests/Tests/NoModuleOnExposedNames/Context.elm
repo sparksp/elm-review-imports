@@ -21,8 +21,7 @@ all =
                     let
                         context : Context.Module
                         context =
-                            Context.initial
-                                |> Context.expose [ "Html" ] (Exposing.All Range.emptyRange)
+                            Context.expose [ "Html" ] (Exposing.All Range.emptyRange) Context.initial
                     in
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
@@ -31,8 +30,7 @@ all =
                     let
                         context : Context.Module
                         context =
-                            Context.initial
-                                |> Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Attribute" ])
+                            Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Attribute" ]) Context.initial
                     in
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
@@ -41,8 +39,7 @@ all =
                     let
                         context : Context.Module
                         context =
-                            Context.initial
-                                |> Context.expose [ "Html" ] (Exposing.Explicit [ typeOrAliasExpose "Attribute" ])
+                            Context.expose [ "Html" ] (Exposing.Explicit [ typeOrAliasExpose "Attribute" ]) Context.initial
                     in
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal True
@@ -51,8 +48,7 @@ all =
                     let
                         context : Context.Module
                         context =
-                            Context.initial
-                                |> Context.expose [ "Html" ] (Exposing.Explicit [ functionExpose "div" ])
+                            Context.expose [ "Html" ] (Exposing.Explicit [ functionExpose "div" ]) Context.initial
                     in
                     -- Functions are not types
                     Context.isTypeExposed context [ "Html" ] "div"
@@ -62,8 +58,7 @@ all =
                     let
                         context : Context.Module
                         context =
-                            Context.initial
-                                |> Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Html" ])
+                            Context.expose [ "Html" ] (Exposing.Explicit [ typeExpose "Html" ]) Context.initial
                     in
                     Context.isTypeExposed context [ "Html" ] "Attribute"
                         |> Expect.equal False

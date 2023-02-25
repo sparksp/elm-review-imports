@@ -469,8 +469,7 @@ projectRuleTests =
                     Rule.newProjectRuleSchema "TestProjectRule" ()
                         |> Rule.withModuleVisitor
                             (\schema ->
-                                schema
-                                    |> NameVisitor.withNameVisitor nameVisitor
+                                NameVisitor.withNameVisitor nameVisitor schema
                             )
                         |> Rule.withModuleContext
                             { foldProjectContexts = \() () -> ()

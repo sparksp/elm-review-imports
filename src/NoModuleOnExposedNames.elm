@@ -103,7 +103,9 @@ rule =
 
 importVisitor : Node Import -> Context.Module -> ( List (Error {}), Context.Module )
 importVisitor node context =
-    ( [], context |> rememberExposedNames (Node.value node) )
+    ( []
+    , rememberExposedNames (Node.value node) context
+    )
 
 
 rememberExposedNames : Import -> Context.Module -> Context.Module
@@ -120,7 +122,7 @@ rememberExposedNames { moduleName, moduleAlias, exposingList } context =
                         |> Maybe.map Node.value
                         |> Maybe.withDefault (Node.value moduleName)
             in
-            context |> Context.expose moduleNameOrAlias (Node.value exposes)
+            Context.expose moduleNameOrAlias (Node.value exposes) context
 
 
 valueVisitor : Node ( ModuleName, String ) -> Context.Module -> ( List (Error {}), Context.Module )

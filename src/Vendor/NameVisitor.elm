@@ -313,12 +313,16 @@ visitMaybeSignature maybeNode =
 
 visitSignature : Node Signature -> List Name
 visitSignature node =
-    visitTypeAnnotation (node |> Node.value |> .typeAnnotation)
+    Node.value node
+        |> .typeAnnotation
+        |> visitTypeAnnotation
 
 
 visitFunctionImplementation : Node Expression.FunctionImplementation -> List Name
 visitFunctionImplementation node =
-    visitPatternList (node |> Node.value |> .arguments)
+    Node.value node
+        |> .arguments
+        |> visitPatternList
 
 
 visitValueConstructorList : List (Node Type.ValueConstructor) -> List Name
@@ -328,7 +332,9 @@ visitValueConstructorList list =
 
 visitValueConstructor : Node Type.ValueConstructor -> List Name
 visitValueConstructor node =
-    visitTypeAnnotationList (node |> Node.value |> .arguments)
+    Node.value node
+        |> .arguments
+        |> visitTypeAnnotationList
 
 
 visitTypeAnnotationList : List (Node TypeAnnotation) -> List Name
@@ -370,7 +376,9 @@ visitRecordFieldList list =
 
 visitRecordField : Node TypeAnnotation.RecordField -> List Name
 visitRecordField node =
-    visitTypeAnnotation (node |> Node.value |> Tuple.second)
+    Node.value node
+        |> Tuple.second
+        |> visitTypeAnnotation
 
 
 visitExpression : Node Expression -> List Name
@@ -445,7 +453,15 @@ visitPattern node =
 
                 newEnd : Range.Location
                 newEnd =
-                    { start | column = start.column + (name :: moduleName |> String.join "." |> String.length) }
+                    { start
+                        | column =
+                            start.column
+                                + (name
+                                    :: moduleName
+                                    |> String.join "."
+                                    |> String.length
+                                  )
+                    }
 
                 range : Range
                 range =
@@ -474,10 +490,13 @@ visitType node =
     [ Type node ]
 
 
-
---- High Performance List
-
-
+{-| High Performance List.concatMap
+-}
 fastConcatMap : (a -> List b) -> List a -> List b
 fastConcatMap fn =
-    List.foldr (fn >> (++)) []
+    let
+        helper : a -> List b -> List b
+        helper val acc =
+            fn val ++ acc
+    in
+    List.foldr helper []

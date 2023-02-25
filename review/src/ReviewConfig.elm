@@ -5,7 +5,6 @@ import Docs.ReviewAtDocs
 import Docs.ReviewLinksAndSections
 import Docs.UpToDateReadmeLinks
 import NoAlways
-import NoBooleanCase
 import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoDuplicatePorts
@@ -13,7 +12,6 @@ import NoExposingEverything
 import NoForbiddenWords
 import NoImportingEverything
 import NoInconsistentAliases
-import NoLeftPizza
 import NoMissingSubscriptionsCall
 import NoMissingTypeAnnotation
 import NoMissingTypeAnnotationInLetIn
@@ -22,8 +20,6 @@ import NoModuleOnExposedNames
 import NoRecordAliasConstructor
 import NoRecordAliasWithConstructor
 import NoRecursiveUpdate
-import NoRedundantConcat
-import NoRedundantCons
 import NoSimpleLetBody
 import NoUnmatchedUnit
 import NoUnnecessaryTrailingUnderscore
@@ -39,6 +35,16 @@ import NoUnused.Variables
 import NoUnusedPorts
 import NoUselessSubscriptions
 import Review.Rule as Rule exposing (Rule)
+import ReviewPipelineStyles
+import ReviewPipelineStyles.Custom exposing (noSinglePiplinesWithSimpleInputs)
+import ReviewPipelineStyles.Premade
+    exposing
+        ( noMultilineLeftPizza
+        , noPipelinesWithConfusingNonCommutativeFunctions
+        , noRepeatedParentheticalApplication
+        , noSemanticallyInfixFunctionsInLeftPipelines
+        , noSingleLineRightPizza
+        )
 import Simplify
 import UseCamelCase
 import Vendor.NoFullyAppliedPrefixOperator as NoFullyAppliedPrefixOperator
@@ -54,7 +60,6 @@ config =
     , Docs.ReviewAtDocs.rule
     , Docs.UpToDateReadmeLinks.rule
     , NoAlways.rule
-    , NoBooleanCase.rule
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
         |> Rule.ignoreErrorsForDirectories
@@ -77,18 +82,6 @@ config =
         ]
         |> NoInconsistentAliases.noMissingAliases
         |> NoInconsistentAliases.rule
-    , NoLeftPizza.rule NoLeftPizza.Any
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Test functions are traditionally built up using a left pizza.
-              -- While we don't want them in our regular code, let's allow them
-              -- just for tests.
-              "tests/"
-            ]
-    , NoLeftPizza.rule NoLeftPizza.Redundant
-        |> Rule.ignoreErrorsForDirectories
-            [ -- Only check tests for redundant left pizza.
-              "src/"
-            ]
     , NoMissingSubscriptionsCall.rule
     , NoMissingTypeAnnotation.rule
     , NoMissingTypeAnnotationInLetIn.rule
@@ -97,8 +90,6 @@ config =
     , NoRecordAliasConstructor.rule
     , NoRecordAliasWithConstructor.rule
     , NoRecursiveUpdate.rule
-    , NoRedundantConcat.rule
-    , NoRedundantCons.rule
     , NoSimpleLetBody.rule
     , NoUnmatchedUnit.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
@@ -113,6 +104,15 @@ config =
     , NoUnusedPorts.rule
     , NoUnused.Variables.rule
     , NoUselessSubscriptions.rule
+    , ReviewPipelineStyles.rule <|
+        List.concat
+            [ noMultilineLeftPizza
+            , noSingleLineRightPizza
+            , noRepeatedParentheticalApplication
+            , noPipelinesWithConfusingNonCommutativeFunctions
+            , noSemanticallyInfixFunctionsInLeftPipelines
+            , noSinglePiplinesWithSimpleInputs
+            ]
     , Simplify.rule Simplify.defaults
     , UseCamelCase.rule UseCamelCase.default
     ]
