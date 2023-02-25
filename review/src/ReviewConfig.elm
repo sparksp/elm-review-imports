@@ -5,7 +5,6 @@ import Docs.ReviewAtDocs
 import Docs.ReviewLinksAndSections
 import Docs.UpToDateReadmeLinks
 import NoAlways
-import NoBooleanCase
 import NoDebug.Log
 import NoDebug.TodoOrToString
 import NoDuplicatePorts
@@ -22,8 +21,6 @@ import NoModuleOnExposedNames
 import NoRecordAliasConstructor
 import NoRecordAliasWithConstructor
 import NoRecursiveUpdate
-import NoRedundantConcat
-import NoRedundantCons
 import NoSimpleLetBody
 import NoUnmatchedUnit
 import NoUnnecessaryTrailingUnderscore
@@ -54,7 +51,6 @@ config =
     , Docs.ReviewAtDocs.rule
     , Docs.UpToDateReadmeLinks.rule
     , NoAlways.rule
-    , NoBooleanCase.rule
     , NoDebug.Log.rule
     , NoDebug.TodoOrToString.rule
         |> Rule.ignoreErrorsForDirectories
@@ -97,8 +93,6 @@ config =
     , NoRecordAliasConstructor.rule
     , NoRecordAliasWithConstructor.rule
     , NoRecursiveUpdate.rule
-    , NoRedundantConcat.rule
-    , NoRedundantCons.rule
     , NoSimpleLetBody.rule
     , NoUnmatchedUnit.rule
     , NoUnsafePorts.rule NoUnsafePorts.any
