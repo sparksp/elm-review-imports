@@ -504,10 +504,10 @@ elm-review@^2.9.2:
     which "^2.0.2"
     wrap-ansi "^6.2.0"
 
-elm-tooling@^1.13.1, elm-tooling@^1.6.0:
-  version "1.13.1"
-  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.13.1.tgz#74c8258342ff94361574426830ef20d979084830"
-  integrity sha512-a6rL9wW12Ep2oCvQtARaRpQSPGyHEoaxak6cBFej7LiKvqBgD2WrPpABNuTRP4eI3Clnmi7j2G5Nljh41+Wshg==
+elm-tooling@^1.14.0, elm-tooling@^1.6.0:
+  version "1.14.0"
+  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.14.0.tgz#cffe2e3f582e17e50f4bac961588ae92846484c3"
+  integrity sha512-cIbK3gfYWK086HsqOIGM4reIYcV/FF2R/8jIJ6ZUy1/RSkYFUv2BgPTGYYZo1Io9oymmbwoCWWleNtw7LgGL2w==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
