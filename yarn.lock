@@ -537,10 +537,10 @@ elm-review@^2.10.2:
     which "^2.0.2"
     wrap-ansi "^6.2.0"
 
-elm-tooling@^1.14.0, elm-tooling@^1.6.0:
-  version "1.14.0"
-  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.14.0.tgz#cffe2e3f582e17e50f4bac961588ae92846484c3"
-  integrity sha512-cIbK3gfYWK086HsqOIGM4reIYcV/FF2R/8jIJ6ZUy1/RSkYFUv2BgPTGYYZo1Io9oymmbwoCWWleNtw7LgGL2w==
+elm-tooling@^1.15.0, elm-tooling@^1.6.0:
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.15.0.tgz#e1f2ad4df34d3f890c906a43c9a3d295d3c6331d"
+  integrity sha512-quRE5LGJyrkPBoJ3MvFQ5RGgf80J0L0d3NkduStvXh4TmZuMXNC3Z/l2ZRoq2UTUaNWeYfO1Zx5wns1AvsTrnw==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
