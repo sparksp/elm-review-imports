@@ -99,8 +99,9 @@ config =
     , NoUnused.Dependencies.rule
     , NoUnused.Exports.defaults
         |> NoUnused.Exports.reportUnusedProductionExports
-            { isProductionFile = \{ moduleName, filePath, isInSourceDirectories } ->
-                isInSourceDirectories || List.member "Vendor" moduleName
+            { isProductionFile =
+                \{ moduleName, filePath, isInSourceDirectories } ->
+                    isInSourceDirectories || List.member "Vendor" moduleName
             , exceptionsAre = []
             }
         |> NoUnused.Exports.toRule
