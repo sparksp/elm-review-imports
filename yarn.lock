@@ -292,22 +292,7 @@ chalk@^4.0.0, chalk@^4.1.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-chokidar@^3.3.1:
-  version "3.5.2"
-  resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.2.tgz#dba3976fcadb016f66fd365021d91600d01c1e75"
-  integrity sha512-ekGhOnNVPgT77r4K/U3GDhu+FQ2S8TnK/s2KbIGXi0SZWuwkZ2QNyfWdZW+TVfn84DpEP7rLeCt2UI6bJ8GwbQ==
-  dependencies:
-    anymatch "~3.1.2"
-    braces "~3.0.2"
-    glob-parent "~5.1.2"
-    is-binary-path "~2.1.0"
-    is-glob "~4.0.1"
-    normalize-path "~3.0.0"
-    readdirp "~3.6.0"
-  optionalDependencies:
-    fsevents "~2.3.2"
-
-chokidar@^3.5.2:
+chokidar@^3.3.1, chokidar@^3.5.2:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.5.3.tgz#1cf37c8707b932bd1af1ae22c0432e2acd1903bd"
   integrity sha512-Dr3sfKRP6oTcjf2JmUmFJfeVMvXBdegxB0iVQ5eb2V10uFJUCAS8OByZdVAyVb8xXNz3GjjTgj9kLWsZTqE6kw==
@@ -533,15 +518,15 @@ elm-doc-preview@^5.0.5:
     tmp "0.1.0"
     ws "^7.2.3"
 
-elm-review@^2.10.3:
-  version "2.10.3"
-  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.10.3.tgz#0f8a83be4ac1d7d726e19eb1eec8809156d18f16"
-  integrity sha512-9gBqLc5Xm3v9Ncpf8y2haEaBZZyMX25vmwQkrNqSIaNYQ2vdGOIx1eyqRtt1xwX5O8pZdqU8IWC/ENyTrOTKbw==
+elm-review@^2.11.1:
+  version "2.11.1"
+  resolved "https://registry.yarnpkg.com/elm-review/-/elm-review-2.11.1.tgz#02aa590433973af3e4b25a02fbe55fbaea773a83"
+  integrity sha512-mJJN7QmqlV7HcaLigsiap6X3/7o9idA3bg3h7228iokUmBccpBquakPaShM8BZ/wDYtWg53sevSaFpGniEujFA==
   dependencies:
     chalk "^4.0.0"
     chokidar "^3.5.2"
     cross-spawn "^7.0.3"
-    elm-tooling "^1.14.1"
+    elm-solve-deps-wasm "^1.0.2"
     fastest-levenshtein "^1.0.16"
     find-up "^4.1.0"
     folder-hash "^3.3.0"
@@ -557,9 +542,14 @@ elm-review@^2.10.3:
     strip-ansi "^6.0.0"
     terminal-link "^2.1.1"
     which "^2.0.2"
-    wrap-ansi "^6.2.0"
+    wrap-ansi "^7.0.0"
 
-elm-tooling@^1.14.1, elm-tooling@^1.15.1:
+elm-solve-deps-wasm@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/elm-solve-deps-wasm/-/elm-solve-deps-wasm-1.0.2.tgz#cabd3cadf344295944b8d046a857b6ee05e12aaf"
+  integrity sha512-qnwo7RO9IO7jd9SLHvIy0rSOEIlc/tNMTE9Cras0kl+b161PVidW4FvXo0MtXU8GAKi/2s/HYvhcnpR/NNQ1zw==
+
+elm-tooling@^1.15.1:
   version "1.15.1"
   resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.15.1.tgz#1274f97cdfe67a9d8361607a53447bd235cb1458"
   integrity sha512-+rRYa7gzz6l2/Ip2i197MqkW5abOwPOP/+WlyyatLDeDhh+JR0HUMlZJYenCYodBeG/xW5xW3pRYQ2onf5bIAw==
@@ -1252,12 +1242,7 @@ minimatch@~3.0.4:
   dependencies:
     brace-expansion "^1.1.7"
 
-minimist@^1.2.0:
-  version "1.2.7"
-  resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.7.tgz#daa1c4d91f507390437c6a8bc01078e7000c4d18"
-  integrity sha512-bzfL1YUZsP41gmu/qjrEk0Q6i2ix/cVeAhbCbqH9u3zYutS1cLg00qhrD0M2MVdCcx4Sc0UpP2eBWo9rotpq6g==
-
-minimist@^1.2.6:
+minimist@^1.2.0, minimist@^1.2.6:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
@@ -1829,6 +1814,7 @@ statuses@2.0.1:
   integrity sha1-Fhx9rBd2Wf2YEfQ3cfqZOBR4Yow=
 
 "string-width-cjs@npm:string-width@^4.2.0", string-width@^4.1.0:
+  name string-width-cjs
   version "4.2.3"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-4.2.3.tgz#269c7117d27b05ad2e536830a8ec895ef9c6d010"
   integrity sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==
@@ -1879,6 +1865,7 @@ string_decoder@^1.1.1:
     safe-buffer "~5.2.0"
 
 "strip-ansi-cjs@npm:strip-ansi@^6.0.1", strip-ansi@^6.0.0, strip-ansi@^6.0.1:
+  name strip-ansi-cjs
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/strip-ansi/-/strip-ansi-6.0.1.tgz#9e26c63d30f53443e9489495b2105d37b67a85d9"
   integrity sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==
@@ -2035,19 +2022,10 @@ which@^2.0.1, which@^2.0.2:
   dependencies:
     isexe "^2.0.0"
 
-"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0":
+"wrap-ansi-cjs@npm:wrap-ansi@^7.0.0", wrap-ansi@^7.0.0:
   version "7.0.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-7.0.0.tgz#67e145cff510a6a6984bdf1152911d69d2eb9e43"
   integrity sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==
-  dependencies:
-    ansi-styles "^4.0.0"
-    string-width "^4.1.0"
-    strip-ansi "^6.0.0"
-
-wrap-ansi@^6.2.0:
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-6.2.0.tgz#e9393ba07102e6c91a3b221478f0257cd2856e53"
-  integrity sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==
   dependencies:
     ansi-styles "^4.0.0"
     string-width "^4.1.0"
