@@ -11,6 +11,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+
       - uses: actions/cache@v4
         id: yarn-cache
         with:
@@ -47,6 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+
       - uses: actions/cache@v4
         id: yarn-cache
         with:
@@ -79,6 +87,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache@v4
         id: yarn-cache
@@ -113,6 +125,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
 
       - uses: actions/cache@v4
         id: yarn-cache
