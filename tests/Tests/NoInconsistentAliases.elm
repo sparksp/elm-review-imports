@@ -10,6 +10,7 @@ all =
     describe "NoInconsistentAliases"
         [ describe "preferred aliases" preferredAliasTests
         , describe "noMissingAliases" noMissingAliasesTests
+        , describe "discovery" discoveryTests
         ]
 
 
@@ -329,8 +330,8 @@ shiftRange input _ _ =
         asList : ( ESN.Node, Int ) -> List ESN.Node
         asList ( node, _ ) = [ node ]
         ( ESN.Node range1 value1, length1 ) = input
-        [ ESN.Node range2 value2 ] = asList input
-        ESN.Node range3 value3 :: [] = asList input
+        ( ESN.Node range2 value2 ) = asList input
+        ( ESN.Node range3 value3, [] ) = asList input
     in
     range
 """
@@ -353,8 +354,8 @@ shiftRange input _ _ =
         asList : ( Node.Node, Int ) -> List Node.Node
         asList ( node, _ ) = [ node ]
         ( Node.Node range1 value1, length1 ) = input
-        [ Node.Node range2 value2 ] = asList input
-        Node.Node range3 value3 :: [] = asList input
+        ( Node.Node range2 value2 ) = asList input
+        ( Node.Node range3 value3, [] ) = asList input
     in
     range
 """
@@ -491,6 +492,28 @@ main = 1"""
                         |> rule
                     )
                 |> Review.Test.expectNoErrors
+    ]
+
+
+discoveryTests : List Test
+discoveryTests =
+    [ test "correctly discovers inconsistent aliases" <|
+        \() ->
+            Review.Test.runOnModules
+                (Rule.config []
+                    |> Rule.discoverAliases
+                    |> rule
+                )
+                [ """
+module A exposing (a)
+import Json.Encode as E
+a = 0""", """
+module B exposing (b)
+import Json.Encode as JE
+b = 0""" ]
+                |> Review.Test.expectErrorsForModules
+                    [ ( "B", [ incorrectAliasError "E" "Json.Encode" "JE" ] )
+                    ]
     ]
 
 
