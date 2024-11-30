@@ -58,6 +58,19 @@ view children =
 """
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
+        , test "does not report names which are shadowed" <|
+            \() ->
+                """
+module MyModule exposing (Thing)
+
+import MyModule.Internal exposing (Thing(..))
+
+
+type alias Thing =
+    MyModule.Internal.Thing
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
         ]
 
 
