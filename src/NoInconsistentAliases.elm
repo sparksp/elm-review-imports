@@ -1,12 +1,14 @@
 module NoInconsistentAliases exposing
     ( rule, config, noMissingAliases
     , Config
+    , discoverAliasesAndShowIndividual, discoverAliasesAndShowSummary, doNotDiscoverIn
     )
 
 {-|
 
 @docs rule, config, noMissingAliases
 @docs Config
+@docs discoverAliasesAndShowIndividual, discoverAliasesAndShowSummary, doNotDiscoverIn
 
 -}
 
@@ -90,7 +92,34 @@ noMissingAliases =
     Config.noMissingAliases
 
 
+{-| Automatically discover which aliases to use based on usage in your project.
+
+Shows a summary of mismatches - you should use this when first adding NoInconsistentAliases to your project.
+
+-}
+discoverAliasesAndShowSummary : Config -> Config
+discoverAliasesAndShowSummary =
+    Config.discoverAliases Config.DiscoverAndShowSummary
+
+
+{-| Automatically discover which aliases to use based on usage in your project.
+
+Shows individual errors for mismatches - you should use this after the first pass of fixes.
+
+-}
+discoverAliasesAndShowIndividual : Config -> Config
+discoverAliasesAndShowIndividual =
+    Config.discoverAliases Config.DiscoverAndShowIndividual
+
+
 {-| Configuration for the NoInconsistentAliases rule.
 -}
 type alias Config =
     Config.Config
+
+
+{-| Ignore specific folders when doing discovery.
+-}
+doNotDiscoverIn : List String -> Config -> Config
+doNotDiscoverIn ignored cfg =
+    Config.doNotDiscoverIn ignored cfg
