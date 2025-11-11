@@ -5,7 +5,7 @@ import Elm.Syntax.ModuleName exposing (ModuleName)
 import Elm.Syntax.Node as Node exposing (Node(..))
 import Elm.Syntax.Range exposing (Range)
 import NoInconsistentAliases.BadAlias as BadAlias exposing (BadAlias)
-import NoInconsistentAliases.Config exposing (Config)
+import NoInconsistentAliases.Config as Config exposing (Config)
 import NoInconsistentAliases.Context as Context
 import NoInconsistentAliases.MissingAlias as MissingAlias exposing (MissingAlias)
 import NoInconsistentAliases.ModuleUse as ModuleUse exposing (ModuleUse)
@@ -22,12 +22,177 @@ rule config =
         options =
             Options.fromConfig config
     in
-    Rule.newModuleRuleSchema "NoInconsistentAliases" Context.initial
-        |> Rule.withImportVisitor (importVisitor options)
-        |> NameVisitor.withNameVisitor moduleCallVisitor
-        |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAlias)
-        |> Rule.providesFixesForModuleRule
-        |> Rule.fromModuleRuleSchema
+    Rule.newProjectRuleSchema "NoInconsistentAliases" Context.initialProject
+        |> Rule.withModuleVisitor
+            (\visitor ->
+                visitor
+                    |> Rule.withImportVisitor (importVisitor options)
+                    |> NameVisitor.withNameVisitor moduleCallVisitor
+                    |> Rule.withFinalModuleEvaluation (finalEvaluation options.lookupAlias)
+                    |> Rule.providesFixesForModuleRule
+            )
+        |> Rule.withModuleContextUsingContextCreator (Context.converter options)
+        |> (case options.discoverAliases of
+                Config.DoNotDiscover ->
+                    identity
+
+                Config.DiscoverAndShowSummary ->
+                    Rule.withFinalProjectEvaluation discoverAndShowSummary >> Rule.providesFixesForProjectRule
+
+                Config.DiscoverAndShowIndividual ->
+                    Rule.withFinalProjectEvaluation discoverAndShowIndividual
+           )
+        |> Rule.fromProjectRuleSchema
+
+
+discoverAndShowSummary : Context.Project -> List (Error { useErrorForModule : () })
+discoverAndShowSummary project =
+    project
+        |> Context.getAliasesGroups
+        |> List.concatMap mismatchedAliasToErrorSummary
+
+
+mismatchedAliasToErrorSummary :
+    { from : ModuleName
+    , tos :
+        List
+            ( String
+            , List
+                { inModule : List String
+                , aliasRange : Range
+                , key : Rule.ModuleKey
+                }
+            )
+    }
+    -> List (Error { useErrorForModule : () })
+mismatchedAliasToErrorSummary { from, tos } =
+    let
+        fromName : String
+        fromName =
+            formatModuleName from
+    in
+    case filterAndSortTos fromName tos of
+        [] ->
+            []
+
+        [ _ ] ->
+            []
+
+        sorted ->
+            [ Rule.globalError
+                { message = "Mismatched aliases for `" ++ fromName ++ "`"
+                , details =
+                    List.map
+                        (\( to, modules ) ->
+                            let
+                                count : Int
+                                count =
+                                    List.length modules
+
+                                common : String
+                                common =
+                                    " - `" ++ to ++ "` is used " ++ String.fromInt count ++ " times"
+                            in
+                            if count < 20 then
+                                common
+                                    ++ " in "
+                                    ++ String.join ", "
+                                        (List.map (\{ inModule } -> "`" ++ formatModuleName inModule ++ "`") modules)
+                                    ++ "."
+
+                            else
+                                common ++ "."
+                        )
+                        sorted
+                }
+            ]
+
+
+filterAndSortTos :
+    String
+    ->
+        List
+            ( String
+            , List
+                { inModule : List String
+                , aliasRange : Range
+                , key : Rule.ModuleKey
+                }
+            )
+    ->
+        List
+            ( String
+            , List
+                { inModule : List String
+                , aliasRange : Range
+                , key : Rule.ModuleKey
+                }
+            )
+filterAndSortTos fromName tos =
+    tos
+        |> List.sortBy
+            (\( to, modules ) ->
+                ( if fromName == to then
+                    1
+
+                  else
+                    0
+                , -(List.length modules)
+                )
+            )
+
+
+discoverAndShowIndividual : Context.Project -> List (Error { useErrorForModule : () })
+discoverAndShowIndividual project =
+    project
+        |> Context.getAliasesGroups
+        |> List.concatMap mismatchedAliasToErrorIndividual
+
+
+mismatchedAliasToErrorIndividual :
+    { from : ModuleName
+    , tos :
+        List
+            ( String
+            , List
+                { inModule : List String
+                , aliasRange : Range
+                , key : Rule.ModuleKey
+                }
+            )
+    }
+    -> List (Error { useErrorForModule : () })
+mismatchedAliasToErrorIndividual { from, tos } =
+    let
+        fromName : String
+        fromName =
+            formatModuleName from
+    in
+    case filterAndSortTos fromName tos of
+        [] ->
+            []
+
+        [ _ ] ->
+            []
+
+        ( correct, _ ) :: wrongs ->
+            List.concatMap
+                (\( to, modules ) ->
+                    List.map
+                        (\{ key, aliasRange } ->
+                            Rule.errorForModule key
+                                { message =
+                                    "Incorrect alias `" ++ to ++ "` for module `" ++ fromName ++ "`."
+                                , details =
+                                    [ "This import does not use your preferred alias `" ++ correct ++ "` for `" ++ fromName ++ "`."
+                                    , "You should update the alias to be consistent with the rest of the project. Remember to change all references to the alias in this module too."
+                                    ]
+                                }
+                                aliasRange
+                        )
+                        modules
+                )
+                wrongs
 
 
 importVisitor : Options -> Node Import -> Context.Module -> ( List (Error {}), Context.Module )
@@ -48,7 +213,7 @@ rememberModuleAlias moduleName maybeModuleAlias context =
                 |> Maybe.withDefault moduleName
                 |> Node.map formatModuleName
     in
-    Context.addModuleAlias (Node.value moduleName) (Node.value moduleAlias) context
+    Context.addModuleAlias (Node.value moduleName) moduleAlias context
 
 
 rememberBadAlias : Options -> Node ModuleName -> Maybe (Node ModuleName) -> Context.Module -> Context.Module
