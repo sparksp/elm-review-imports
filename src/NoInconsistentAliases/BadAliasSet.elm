@@ -36,4 +36,4 @@ use name moduleUse (BadAliasSet aliases) =
 
 fold : (BadAlias -> a -> a) -> a -> BadAliasSet -> a
 fold folder start (BadAliasSet aliases) =
-    Dict.foldl (always folder) start aliases
+    Dict.foldl (\_ -> folder) start aliases

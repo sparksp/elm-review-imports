@@ -37,4 +37,4 @@ use moduleName moduleUse (MissingAliasSet aliases) =
 
 fold : (MissingAlias -> a -> a) -> a -> MissingAliasSet -> a
 fold folder start (MissingAliasSet aliases) =
-    Dict.foldl (always folder) start aliases
+    Dict.foldl (\_ -> folder) start aliases
