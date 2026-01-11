@@ -330,7 +330,6 @@ shiftRange input _ _ =
         asList ( node, _ ) = [ node ]
         ( ESN.Node range1 value1, length1 ) = input
         [ ESN.Node range2 value2 ] = asList input
-        ESN.Node range3 value3 :: [] = asList input
     in
     range
 """
@@ -354,7 +353,6 @@ shiftRange input _ _ =
         asList ( node, _ ) = [ node ]
         ( Node.Node range1 value1, length1 ) = input
         [ Node.Node range2 value2 ] = asList input
-        Node.Node range3 value3 :: [] = asList input
     in
     range
 """
