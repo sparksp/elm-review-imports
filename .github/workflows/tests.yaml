@@ -155,7 +155,7 @@ jobs:
         run: npx --no-install node elm-review-package-tests/check-previews-compile.js
 
       - name: Publish package
-        uses: dillonkearns/elm-publish-action@1.1.0
+        uses: dillonkearns/elm-publish-action@v2.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-elm: ./node_modules/.bin/elm
