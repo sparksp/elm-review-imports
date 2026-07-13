@@ -626,10 +626,10 @@ elm-review@^2.13.5:
   resolved "https://registry.yarnpkg.com/elm-solve-deps-wasm/-/elm-solve-deps-wasm-2.0.0.tgz#8214705876fbcd9789cf6ab2db45ec781b5c1234"
   integrity sha512-11OV8FgB9qsth/F94q2SJjb1MoEgbworSyNM1L+YlxVoaxp7wtWPyA8cNcPEkSoIKG1B8Tqg68ED1P6dVamHSg==
 
-elm-tooling@^1.18.0:
-  version "1.18.0"
-  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.18.0.tgz#7aff23a65cd1fc133b93e5bfff0f6deac46aa449"
-  integrity sha512-8tY35aNpB6z+rtmix4VPZ+q+kGPyOx0xDId7YLqcPmsKSKoS0vuNVC80ixwRbIhLWVifNDkBB7SjSIgp5Z39Uw==
+elm-tooling@^1.19.0:
+  version "1.19.0"
+  resolved "https://registry.yarnpkg.com/elm-tooling/-/elm-tooling-1.19.0.tgz#b17a208af1a2ca396dfef43f39cdc9c762ed19e4"
+  integrity sha512-vld8ue23IvanvRN0QFgXiQ9syaTgICdjURym05R6D62KfnyMUhOq+ZIE+XQEIsWZ7YYkYB1Q0yXPkpilzqDBsw==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
