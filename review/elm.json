@@ -3,7 +3,7 @@
     "source-directories": [
         "src"
     ],
-    "elm-version": "0.19.1",
+    "elm-version": "0.19.2",
     "dependencies": {
         "direct": {
             "SiriusStarr/elm-review-pipeline-styles": "1.3.9",
